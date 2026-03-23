@@ -1,0 +1,6 @@
+Requirements
+
+tqdm>=4.64.0
+openpyxl>=3.0.0
+Pillow>=9.0.0
+pandas>=1.3.0
