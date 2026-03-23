@@ -1,45 +1,48 @@
-Written By: Adrian Utz on: 3/19/2026
+# Multitool - Command Line File Utilities
 
-GUI design (concise)
+A simple Python-based command-line multitool for common file operations and light data workflows.
 
-Approach: Use tkinter (already imported in multitool.py) for a lightweight cross-platform app.
+## Features
 
-Window: single main window with menu bar (File, Settings, Help).
+- Count files by extension
+- List files by extension
+- Search and (optionally) copy files
+- Image reformatting/conversion
+- Rename by Excel SKU mapping
+- Compare TXT and Excel content
+- Download images from Excel URL list
+- Compare folder contents
 
-Navigation: left vertical pane with buttons for each tool:
+## Requirements
 
-Count files
-List filenames
-Search & Copy
-Image reformat/convert
-Excel Renaming
-TXT↔Excel Compare
-Excel Image Downloader
-Folder Compare
-Exit
-Main area:
+- Python 3.8+ (recommended)
+- Modules in same folder:
+  - `multitool.py`
+  - `count_files_by_extension.py`
+  - `list_files_by_extension.py`
+  - `search_files.py`
+  - `image_reformatting.py`
+  - `rename_wt_excel.py`
+  - `compare_txt_to_excel.py`
+  - `web_downloading.py`
+  - `folder_compare.py`
 
-Top: tool-specific options panel (dynamic: changes per tool).
-Center: scrollable log/output Text widget for status and results.
-Right (optional): small preview or parameters summary.
-Bottom:
+## Quick Start
 
-ttk.Progressbar (indeterminate and determinate modes).
-Run / Cancel buttons.
-Execution & Responsiveness:
+1. Open a terminal in project folder.
+2. Run:
+   ```bash
+   python multitool.py
+   ```
+3. Choose one of the options 1-9 from the menu.
 
-Run tasks in background using concurrent.futures.ThreadPoolExecutor (or threading.Thread) to avoid UI freeze.
-Provide callbacks to append progress/log lines to the Text widget via tkinter thread-safe queue + after().
-File dialogs & inputs:
+## Notes
 
-Use filedialog.askdirectory, askopenfilename, askopenfilenames for selecting folders/files.
-For operations needing extra inputs (columns, extensions, ignore ext), show small popups or expand the options panel.
-Integration notes:
+- The toolkit is designed as a menu-based command-line app.
+- The code includes a commented-out GUI section for future enhancement.
+- The `__pycache__` folder may be created automatically by Python and can be deleted safely.
 
-Keep current modules (count_files_by_extension, etc.) and call their functions from the GUI.
-Prefer small refactors so functions accept optional path argument and an optional logger/progress_callback.
-If a function prints to stdout, route prints to the GUI log by temporarily redirecting sys.stdout or by wrapping functions to capture output.
-Persistence & Extras:
+## Author
 
-Save last-used folders and simple settings in config.json in the app folder.
-Add Help → Short usage docs and "Open log folder" option.
+- AJ Utz
+- Last recorded update in source: 3/19/2026
