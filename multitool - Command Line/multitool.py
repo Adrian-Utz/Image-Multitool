@@ -32,9 +32,9 @@ import count_files_by_extension
 #Took out all the functions in this file and put them in their own files. This makes it easier to read and maintain. 
 #Thought about making a GUI for it but I think the command line is fine for now. Maybe in the future I will add a GUI option. 
 #I coded a basic GUI but it was a pain to get it to work with the progress bars and the output. I will save it for a future update when I have more time to work on it.
+#Removed unused GUI. Working on a version of this tool that uses a GUI.
 
-
-#Last Update: 3/19/2026
+#Last Update: 3/24/2026
 
 #Written by: AJ Utz on: 12/3/2025
 
@@ -109,108 +109,3 @@ def main_menu():
 
 if __name__ == "__main__":
     main_menu()
-
-
-'''
-def run_count():
-    folder = filedialog.askdirectory(title="Select a folder")
-    if folder:
-        count_files_by_extension.count_files_by_extension(folder)
-
-def run_list():
-    folder = filedialog.askdirectory(title="Select a folder")
-    if folder:
-        list_files_by_extension.list_files_by_extension(folder)
-
-def run_search():
-    folder = filedialog.askdirectory(title="Select a folder")
-    if folder:
-        search_files.search_files(folder)
-
-def run_image():
-    folder = filedialog.askdirectory(title="Select a folder")
-    if folder:
-        image_reformatting.run_image_reformatter(folder)
-
-def run_excel_rename():
-    folder = filedialog.askdirectory(title="Select an folder")
-    if folder:
-        rename_wt_excel.run_excel_image_sku_tool(folder)
-
-def run_compare():
-    folder = filedialog.askdirectory(title="Select an folder")
-    if folder:
-        compare_txt_to_excel.run_txt_excel_compare(folder)
-
-def run_downloader():
-    folder = filedialog.askdirectory(title="Select an folder")
-    if folder:
-        web_downloading.run_excel_image_downloader(folder)
-
-def run_folder_compare():
-    folder = filedialog.askdirectory(title="Select an folder")
-    if folder:
-        folder_compare.run_folder_compare(folder)
-
-
-
-def run_with_progress(func):
-    progress.start()
-    func()
-    progress.stop()
-
-def clear_output():
-    output.delete(1.0, tk.END)
-
-
-
-class TextRedirector:
-    def __init__(self, text_widget):
-        self.text_widget = text_widget
-
-    def write(self, message):
-        self.text_widget.insert(tk.END, message)
-        self.text_widget.see(tk.END)
-    
-    def flush(self):
-        pass
-
-
-def main():
-    global progress
-
-    root = tk.Tk()
-    root.title("File Management Multitool")
-    root.state("zoomed")  # Start maximized
-    root.resizable(True, True)
-    root.configure(padx=20, pady=20)
-
-    tk.Label(root, text="File Management Multitool", font=("Arial", 16)).pack(pady=10)
-
-    progress = ttk.Progressbar(root, orient="horizontal", mode="indeterminate")
-    progress.pack(pady=10)
-
-    output = tk.Text(root, height=15, bg="black", fg="lime", insertbackground="white")
-    output.pack(fill="both", expand=True)
-
-    sys.stdout = TextRedirector(output)
-
-    tk.Button(root, text="Count files", command=lambda: run_with_progress(run_count)).pack(pady=5)
-    tk.Button(root, text="List files", command=lambda: run_with_progress(run_list)).pack(pady=5)
-    tk.Button(root, text="Search and Copy files", command=lambda: run_with_progress(run_search)).pack(pady=5)
-    tk.Button(root, text="Image reformatting / conversion", command=lambda: run_with_progress(run_image)).pack(pady=5)
-    tk.Button(root, text="Excel Renaming Tool", command=lambda: run_with_progress(run_excel_rename)).pack(pady=5)
-    tk.Button(root, text="TXT <-> Excel Compare Tool", command=lambda: run_with_progress(run_compare)).pack(pady=5)
-    tk.Button(root, text="Excel Image Downloader", command=lambda: run_with_progress(run_downloader)).pack(pady=5)
-    tk.Button(root, text="Folder Comparison Tool", command=lambda: run_with_progress(run_folder_compare)).pack(pady=5)
-    #Button for testing
-    tk.Button(root, text="Clear Log", command=clear_output).pack(pady=5)
-
-    tk.Button(root, text="Exit", command=root.quit).pack(pady=20)
-
-    root.mainloop()
-
-if __name__ == "__main__":
-    main()
-'''
-
