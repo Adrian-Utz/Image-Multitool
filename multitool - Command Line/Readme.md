@@ -45,4 +45,4 @@ A simple Python-based command-line multitool for common file operations and ligh
 ## Author
 
 - AJ Utz
-- Last recorded update in source: 3/19/2026
+- Last recorded update in source: 3/24/2026
