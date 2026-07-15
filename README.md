@@ -12,8 +12,8 @@ An all-in-one tool for bulk image re-formatting, file renaming, and file managem
 - **Excel Image Downloader** — Download images from URLs listed in an Excel file with multi-threaded support.
 - **Folder Comparison** — Compare two folders and find files that differ, with optional extension-ignore mode.
 
-To run in commandline: run multitool.py
-To run as a GUI: run gui.py
+- To run in commandline: run multitool.py
+- To run as a GUI: run gui.py
 
 ### GUI Layout
 
