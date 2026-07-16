@@ -102,4 +102,4 @@ Moved the color management to the options file.
 Updated the Cropping mechanic in the image reformatter so you can dynamically crop. You are no longer restricted to a square. 
 
 ## v1.2.6
-- Added dpi changing to the image reformatter. Added a iteration function in the image reformatter.
+- Added dpi changing to the image reformatter. Added a iteration function in the image reformatter. First release on GitHub.
