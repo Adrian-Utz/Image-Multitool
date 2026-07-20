@@ -2,6 +2,8 @@
 
 An all-in-one tool for bulk image re-formatting, file renaming, and file management.
 
+## Check out the Discussions tab to suggest features!
+
 ## Features
 - **Count Files by Extension** — Analyze file distribution in a folder with optional subfolder traversal.
 - **List Filenames** — List and export files by extension with optional txt output.
@@ -51,4 +53,3 @@ All included in `requirements.txt`:
 | requests | HTTP downloads |
 | tqdm | Progress bars (disabled in GUI mode, only for CLI) |
 | jinja2 | A very fast and expressive template engine |
-| pillow-heif | Ability to convert to heif files |
