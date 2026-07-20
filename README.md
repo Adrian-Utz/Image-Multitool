@@ -16,6 +16,8 @@ An all-in-one tool for bulk image re-formatting, file renaming, and file managem
 
 #### To run in commandline: run multitool.py
 #### To run as a GUI: run gui.py
+#### To make the EXE you need pyinstaller (Or you can just download it in the release tab)
+
 
 ### GUI Layout
 
