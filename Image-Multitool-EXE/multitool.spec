@@ -42,6 +42,7 @@ a = Analysis(
         'gui_helpers',
         'konami',
         'options',
+        'create_backup',
         'PIL',
         'pandas',
         'numpy',

@@ -25,7 +25,7 @@ from options import OptionsWindow, apply_theme, set_auto_start, set_dark_mode, s
 
 #Version information! Change this variable when you update the application to keep track of versions in the UI and logs.
 #Follow semantic versioning (major.minor.patch) for clarity.
-VERSION = "1.2.6"
+VERSION = "1.2.7"
 
 #Description:
 #This is the main GUI application layer that integrates all the tools into a single interface. 
@@ -39,7 +39,7 @@ VERSION = "1.2.6"
 
 #Written by: AJ Utz - and a little bit with the Ai Agent
 #Written on: 3/19/2026
-#Last updated: 7/13/2026
+#Last updated: 8/3/2026
 
 class GUI:
     def __init__(self, root):
@@ -78,6 +78,7 @@ class GUI:
             ("Count files by extension", self.on_count_files, "Requires: A folder to scan for files."),
             ("List filenames", self.on_list_files, "Requires: A folder to list files from."),
             ("Search & Copy", self.on_search_files, "Requires: A source folder to search, search term or .txt file, and destination folder."),
+            ("Backup files", self.on_backup_files, "Requires: One or more files/folders to back up and a destination folder."),
             ("Image reformat", self.on_image_reformat, "Requires: A folder containing images to reformat."),
             ("Excel rename", self.on_rename_excel, "Requires: An Excel file with renaming data and a folder with images."),
             ("TXT <-> Excel Compare", self.on_compare_txt_excel, "Requires: A .txt file, an Excel file (.xlsx or .xls), and a column name."),
@@ -768,6 +769,29 @@ class GUI:
             include_subfolders=include,
             copy=do_copy,
             parent_dest=parent_dest,
+        )
+
+    def on_backup_files(self):
+        import create_backup as cb
+
+        selected_files = cb.select_backup_sources(parent=self.root)
+        if not selected_files:
+            return
+
+        destination = filedialog.askdirectory(title="Select backup destination", parent=self.root)
+        if not destination:
+            return
+
+        include = messagebox.askyesno("Include subfolders?", "Include subfolders in the backup?")
+        task_name = f"Backing up {len(selected_files)} selected item(s)"
+        self.log(f"[STARTING] {task_name}")
+        self.run_in_thread(
+            cb.create_backup,
+            task_name=task_name,
+            sources=selected_files,
+            destination_root=destination,
+            include_subfolders=include,
+            logger=self.log
         )
 
     def on_image_reformat(self):

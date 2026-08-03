@@ -11,6 +11,7 @@ import folder_compare
 import search_files
 import list_files_by_extension
 import count_files_by_extension
+import create_backup
 
 #This is the multitool! This file will allow you to do multiple things. See the change log for new additions.
 #This program will automatically create a __pycache__ folder with a compiled version of this code. You can delete it if you need to.
@@ -53,10 +54,11 @@ def main_menu():
         print("6. TXT <-> Excel Compare Tool")
         print("7. Excel Image Downloader")
         print("8. Folder Comparison Tool")
-        print("9. Exit")
+        print("9. Backup Tool")
+        print("10. Exit")
         print("===========================")
 
-        choice = input("Select an option (1-9): ").strip()
+        choice = input("Select an option (1-10): ").strip()
 
         #If you want this to run you need count_files_by_extension.py in the same folder as the multitool.py file
         if choice == "1":
@@ -96,14 +98,17 @@ def main_menu():
         elif choice == "8":
             folder_compare.run_folder_compare()
             input(RETURN_PROMPT)
-            
-        
+
         elif choice == "9":
+            create_backup.backup_selected_files()
+            input(RETURN_PROMPT)
+            
+        elif choice == "10":
             print("Exiting the program. Goodbye!")
             break
 
         else:
-            print("Invalid choice — please enter 1-9.")
+            print("Invalid choice — please enter 1-10.")
 
 
 

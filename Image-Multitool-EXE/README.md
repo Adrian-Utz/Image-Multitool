@@ -2,8 +2,8 @@
 
 A comprehensive file management and processing application with a modern, responsive GUI. Convert images, rename files using Excel data, search and copy files, download images from URLs, compare folders, and more—all with real-time progress tracking and background threading.
 
-**Version:** 1.2.6
-**Last Updated:** July 13, 2026  
+**Version:** 1.2.7
+**Last Updated:** August 3, 2026  
 **Status:** ✓ Production Ready
 
 ## Features
@@ -17,6 +17,7 @@ A comprehensive file management and processing application with a modern, respon
 - **TXT ↔ Excel Compare** — Compare a text file against an Excel column to find matches and missing items.
 - **Excel Image Downloader** — Download images from URLs listed in an Excel file with multi-threaded support.
 - **Folder Comparison** — Compare two folders and find files that differ, with optional extension-ignore mode.
+- **File Backup** — Backup your files from multiple folder locations all at once.
 
 ### Advanced Features
 - ✓ **Background Threading** — All tools run asynchronously; UI stays responsive during long operations
@@ -103,6 +104,7 @@ pip install pyinstaller
 │  • Count files          │  ├─ Task Counter                 │
 │  • List files           │  └─ Cancel Button                │
 │  • Search & Copy        │                                  │
+│  • Backup Files         │                                  │
 │  • Image Reformat       │                                  │
 │  • Excel Rename         │                                  │
 │  • TXT ↔ Excel          │                                  │
@@ -123,7 +125,7 @@ pip install pyinstaller
 1. Click **Image reformat** button
 2. Select folder with images
 3. Enter target extension: `jpg`
-4. Choose options: compression, resizing, PPI
+4. Choose options: compression, resizing, PPI, DPI, subfolders included
 5. Watch progress in log; results appear in console
 6. Check "Complete ✓" status when done
 
@@ -192,6 +194,7 @@ multitool/
 ├── list_files_by_extension.py        # List files tool (GUI wrapper)
 ├── search_files.py                   # Search & copy tool (GUI wrapper)
 ├── image_reformatting.py             # Image conversion (batch processor)
+├── create_backup.py                  # File backup tool 
 ├── rename_wt_excel.py                # Excel rename tool (file mapping)
 ├── compare_txt_to_excel.py           # TXT/Excel comparison tool
 ├── web_downloading.py                # Image downloader (multi-threaded)
