@@ -371,7 +371,7 @@ def select_backup_options(parent=None):
     root = parent if parent is not None else tk._default_root
     dialog = tk.Toplevel(root) if root is not None else tk.Tk()
     dialog.title("Backup options")
-    dialog.geometry("420x180")
+    dialog.geometry("420x200")
     dialog.transient(root)
     if root is not None:
         dialog.grab_set()

@@ -782,7 +782,11 @@ class GUI:
         if not destination:
             return
 
-        include = messagebox.askyesno("Include subfolders?", "Include subfolders in the backup?")
+        options = cb.select_backup_options(parent=self.root)
+        if options is None:
+            return
+
+        include, fast_mode = options
         task_name = f"Backing up {len(selected_files)} selected item(s)"
         self.log(f"[STARTING] {task_name}")
         self.run_in_thread(
@@ -791,7 +795,8 @@ class GUI:
             sources=selected_files,
             destination_root=destination,
             include_subfolders=include,
-            logger=self.log
+            fast_mode=fast_mode,
+            logger=self.log,
         )
 
     def on_image_reformat(self):
