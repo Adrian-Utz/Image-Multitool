@@ -78,47 +78,28 @@ def _iter_source_files(path, include_subfolders):
     if not os.path.isdir(path):
         return
 
-    #Walkthrough subdirectories only if include_subfolders is true.
+    # Walk through subdirectories only if include_subfolders is true.
     if include_subfolders:
         for root, _, files in os.walk(path):
-            for file_name in sorted(files):
+            for file_name in files:
                 yield os.path.join(root, file_name)
-    #If false use scandir to get top level files
+    # If false, use scandir to enumerate top-level files without sorting.
     else:
         with os.scandir(path) as entries:
-            for entry in sorted(entries, key=lambda item: item.name):
+            for entry in entries:
                 if entry.is_file():
                     yield entry.path
 
 
 def _build_unique_path(target_path, used_paths=None):
-    """Generate a unique path by appending a suffix to the target path if it already exists"""
-
+    """Generate a unique destination path by appending a suffix when duplicates occur."""
 
     if used_paths is None:
-        #Validation check
-        if not os.path.exists(target_path):
-            return target_path
-
-        #Base name extraction from path
-        base_name, extension = os.path.splitext(target_path)
-        counter = 1
-
-        #Loop to find a unique path
-        while True:
-            #construct the candidate path by appening a suffix
-            candidate = f"{base_name}_{counter}{extension}"
-
-            #Check if candidate does not exist and is not in use
-            if not os.path.exists(candidate):
-                return candidate
-            #Increment for next candidate
-            counter += 1
         return target_path
 
     candidate = target_path
     counter = 1
-    while candidate in used_paths or os.path.exists(candidate):
+    while candidate in used_paths:
         base_name, extension = os.path.splitext(target_path)
         candidate = f"{base_name}_{counter}{extension}"
         counter += 1
@@ -126,37 +107,118 @@ def _build_unique_path(target_path, used_paths=None):
     return candidate
 
 
-def _copy_file_with_buffer(src, dest, logger=None):
+def _copy_file_with_buffer(src, dest, logger=None, log_each_file=False, preserve_metadata=True, created_dirs=None, created_dirs_lock=None):
     """Copy a file using a larger buffer for better throughput on large files."""
 
-    #Ensure the destination exists
-    os.makedirs(os.path.dirname(dest), exist_ok=True)
+    parent_dir = os.path.dirname(dest)
+    if created_dirs is None:
+        os.makedirs(parent_dir, exist_ok=True)
+    else:
+        with created_dirs_lock:
+            if parent_dir not in created_dirs:
+                os.makedirs(parent_dir, exist_ok=True)
+                created_dirs.add(parent_dir)
 
-    #Open the source and destination file in binary read/write mode
     with open(src, "rb") as src_file, open(dest, "wb") as dst_file:
-        #copy files contents using a large buffer
-        shutil.copyfileobj(src_file, dst_file, length=1024 * 1024)
-    #copy file metadata
-    shutil.copystat(src, dest)
-    #if run in the GUI send a message to the log
-    if logger:
+        shutil.copyfileobj(src_file, dst_file, length=4 * 1024 * 1024)
+
+    if preserve_metadata:
+        shutil.copystat(src, dest)
+    if log_each_file and logger:
         logger(f"[COPY] {src} -> {dest}")
 
 
-def create_backup(sources, destination_root, include_subfolders=False, logger=print, progress_callback=None, cancel_event=None, max_workers=None):
-    """Create a timestamped backup folder and copy the selected files into it."""
+def _count_source_files(existing_sources, include_subfolders):
+    """Count file entries for progress reporting without building a copy list."""
 
-    #Normilize the list of source paths
+    total_files = 0
+    for source in existing_sources:
+        if os.path.isfile(source):
+            total_files += 1
+        elif os.path.isdir(source):
+            if include_subfolders:
+                for _, _, files in os.walk(source):
+                    total_files += len(files)
+            else:
+                with os.scandir(source) as entries:
+                    for entry in entries:
+                        if entry.is_file():
+                            total_files += 1
+    return total_files
+
+
+def _iter_copy_tasks(existing_sources, backup_root, include_subfolders, used_paths, check_disk_space=True, free_bytes=None, logger=None):
+    """Yield copy tasks while scanning sources so copying can begin immediately."""
+
+    scanned_bytes = 0
+    for source in existing_sources:
+        if os.path.isfile(source):
+            if check_disk_space:
+                try:
+                    file_size = os.path.getsize(source)
+                except OSError:
+                    logger(f"[WARN] Skipping unreadable file: {source}")
+                    continue
+
+                scanned_bytes += file_size
+                if free_bytes is not None and scanned_bytes > free_bytes:
+                    raise OSError(
+                        f"Not enough free space in destination. Need at least ~{scanned_bytes / (1024 * 1024):.1f} MB."
+                    )
+
+            dest_path = os.path.join(backup_root, os.path.basename(source))
+            dest_path = _build_unique_path(dest_path, used_paths)
+            yield source, dest_path
+
+        elif os.path.isdir(source):
+            for source_file in _iter_source_files(source, include_subfolders):
+                if check_disk_space:
+                    try:
+                        file_size = os.path.getsize(source_file)
+                    except OSError:
+                        logger(f"[WARN] Skipping unreadable file: {source_file}")
+                        continue
+
+                    scanned_bytes += file_size
+                    if free_bytes is not None and scanned_bytes > free_bytes:
+                        raise OSError(
+                            f"Not enough free space in destination. Need at least ~{scanned_bytes / (1024 * 1024):.1f} MB."
+                        )
+
+                relative_path = os.path.relpath(source_file, source)
+                dest_path = os.path.join(backup_root, relative_path)
+                dest_path = _build_unique_path(dest_path, used_paths)
+                yield source_file, dest_path
+        else:
+            logger(f"[WARN] Unsupported path: {source}")
+
+
+def create_backup(
+    sources,
+    destination_root,
+    include_subfolders=False,
+    logger=print,
+    progress_callback=None,
+    cancel_event=None,
+    max_workers=None,
+    preserve_metadata=True,
+    check_disk_space=True,
+    log_each_file=False,
+    fast_mode=False,
+):
+    """Create a timestamped backup folder and copy the selected files into it.
+
+    fast_mode=True disables disk-space checking and metadata preservation for
+    the highest possible throughput on very large file sets.
+    """
+
     source_list = _normalize_sources(sources)
     if not source_list:
         raise ValueError("No files or folders selected for backup.")
 
-    #get absolute path
     destination_root = os.path.abspath(destination_root)
-    #create destination dirs if it doesn't exist
     os.makedirs(destination_root, exist_ok=True)
 
-    #determine the backup root with a timestamped folder name
     backup_root = os.path.join(
         destination_root,
         f"backup_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}",
@@ -165,7 +227,6 @@ def create_backup(sources, destination_root, include_subfolders=False, logger=pr
 
     logger(f"[INFO] Backup destination: {backup_root}")
 
-    #Collect existing and missing source paths
     existing_sources = [source for source in source_list if os.path.exists(source)]
     missing_sources = [source for source in source_list if not os.path.exists(source)]
     if missing_sources:
@@ -175,76 +236,74 @@ def create_backup(sources, destination_root, include_subfolders=False, logger=pr
     if not existing_sources:
         raise FileNotFoundError("None of the selected paths exist.")
 
-    #Calculate availabe free space in the dest
-    total_bytes = sum(_estimate_size(source) for source in existing_sources)
-    free_bytes = shutil.disk_usage(destination_root).free
-    if total_bytes and free_bytes < total_bytes:
-        logger(
-            f"[WARN] Not enough free space in destination. Need ~{total_bytes / (1024 * 1024):.1f} MB, available ~{free_bytes / (1024 * 1024):.1f} MB."
-        )
-        return None
+    if fast_mode:
+        check_disk_space = False
+        preserve_metadata = False
+        log_each_file = False
 
-    #Plan the copy operations
-    copy_plan = []
+    free_bytes = shutil.disk_usage(destination_root).free if check_disk_space else None
     used_paths = set()
-    for source in existing_sources:
-        if os.path.isfile(source):
-            dest_path = os.path.join(backup_root, os.path.basename(source))
-            dest_path = _build_unique_path(dest_path, used_paths)
-            copy_plan.append((source, dest_path))
-        elif os.path.isdir(source):
-            for source_file in _iter_source_files(source, include_subfolders):
-                relative_path = os.path.relpath(source_file, source)
-                dest_path = os.path.join(backup_root, relative_path)
-                dest_path = _build_unique_path(dest_path, used_paths)
-                copy_plan.append((source_file, dest_path))
-        else:
-            logger(f"[WARN] Unsupported path: {source}")
 
-    # Total number of files to be copied
-    total_files = len(copy_plan)
-    #Counter
+    total_files = _count_source_files(existing_sources, include_subfolders) if progress_callback else None
+    next_progress = 1
     copied_count = 0
-    # Lock to ensure thread safe updating of the counter
     counter_lock = threading.Lock()
+    created_dirs = set()
+    created_dirs_lock = threading.Lock()
 
     def _run_copy(item):
-        nonlocal copied_count
-        #Unpack the tuple into vars
+        nonlocal copied_count, next_progress
         source_file, dest_path = item
-        #Check if the user wants to cancel the tool
         if cancel_event and cancel_event.is_set():
             return None
-        #copy files, then safely update the copied_count
-        _copy_file_with_buffer(source_file, dest_path, logger=logger)
+        _copy_file_with_buffer(
+            source_file,
+            dest_path,
+            logger=logger,
+            log_each_file=log_each_file,
+            preserve_metadata=preserve_metadata,
+            created_dirs=created_dirs,
+            created_dirs_lock=created_dirs_lock,
+        )
         with counter_lock:
             copied_count += 1
-            if progress_callback and total_files > 0:
-                progress_callback(int((copied_count / total_files) * 100))
+            if progress_callback and total_files:
+                percent = int((copied_count / total_files) * 100)
+                if percent >= next_progress or copied_count % 100 == 0:
+                    progress_callback(percent)
+                    next_progress = percent + 1
         return dest_path
 
     if max_workers is None:
-        if total_files > 20:
-            max_workers = min(4, max(2, os.cpu_count() or 2))
-        else:
-            max_workers = 1
+        max_workers = min(16, max(4, (os.cpu_count() or 2) * 2))
 
-    if total_files <= 1 or max_workers <= 1:
-        for item in copy_plan:
-            if cancel_event and cancel_event.is_set():
-                logger("[INFO] Backup cancelled.")
-                return None
-            _run_copy(item)
-    else:
-        #Process then submit all tasks to the executor
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = [executor.submit(_run_copy, item) for item in copy_plan]
-            #Iterate over each completed furture while checking for cancelation
-            for future in futures:
+    copy_tasks = _iter_copy_tasks(
+        existing_sources,
+        backup_root,
+        include_subfolders,
+        used_paths,
+        check_disk_space=check_disk_space,
+        free_bytes=free_bytes,
+        logger=logger,
+    )
+
+    try:
+        if max_workers <= 1:
+            for item in copy_tasks:
                 if cancel_event and cancel_event.is_set():
                     logger("[INFO] Backup cancelled.")
                     return None
-                future.result()
+                _run_copy(item)
+        else:
+            chunksize = 16 if max_workers > 8 else 1
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                for _ in executor.map(_run_copy, copy_tasks, chunksize=chunksize):
+                    if cancel_event and cancel_event.is_set():
+                        logger("[INFO] Backup cancelled.")
+                        return None
+    except OSError as error:
+        logger(f"[WARN] {error}")
+        return None
 
     logger(f"[INFO] Backup complete. Copied {copied_count} file(s) to {backup_root}")
     return backup_root
@@ -304,6 +363,63 @@ def select_backup_sources(parent=None):
     return selected_paths
 
 
+def select_backup_options(parent=None):
+    """Show backup option checkboxes for GUI-based backups."""
+    if filedialog is None or messagebox is None:
+        raise RuntimeError("tkinter is unavailable")
+
+    root = parent if parent is not None else tk._default_root
+    dialog = tk.Toplevel(root) if root is not None else tk.Tk()
+    dialog.title("Backup options")
+    dialog.geometry("420x180")
+    dialog.transient(root)
+    if root is not None:
+        dialog.grab_set()
+
+    include_var = tk.BooleanVar(value=False)
+    fast_var = tk.BooleanVar(value=False)
+    result = {"confirmed": False, "include_subfolders": False, "fast_mode": False}
+
+    tk.Label(dialog, text="Backup options", font=(None, 10, "bold")).pack(anchor="w", padx=10, pady=(10, 5))
+    tk.Checkbutton(dialog, text="Include subfolders", variable=include_var).pack(anchor="w", padx=20, pady=2)
+    tk.Checkbutton(dialog, text="Enable fast mode", variable=fast_var).pack(anchor="w", padx=20, pady=2)
+
+    warning_text = (
+        "Fast mode disables disk-space checking and metadata preservation. "
+        "Use only for very large backups on fast network drives."
+    )
+    tk.Label(dialog, text=warning_text, wraplength=380, justify="left", fg="darkred").pack(anchor="w", padx=20, pady=(10, 5))
+
+    def finish():
+        if fast_var.get():
+            proceed = messagebox.askyesno(
+                "Fast mode warning",
+                "Fast mode skips disk space checking and metadata preservation. "
+                "This improves speed but may discard file timestamps and fail silently if destination space is insufficient.\n\n"
+                "Continue with fast mode?",
+                parent=dialog,
+            )
+            if not proceed:
+                return
+        result["confirmed"] = True
+        result["include_subfolders"] = include_var.get()
+        result["fast_mode"] = fast_var.get()
+        dialog.destroy()
+
+    def cancel_options():
+        dialog.destroy()
+
+    button_frame = tk.Frame(dialog)
+    button_frame.pack(fill="x", padx=10, pady=(10, 10))
+    tk.Button(button_frame, text="Start Backup", width=12, command=finish).pack(side="right", padx=(0, 5))
+    tk.Button(button_frame, text="Cancel", width=12, command=cancel_options).pack(side="right")
+
+    dialog.wait_window()
+    if result["confirmed"]:
+        return result["include_subfolders"], result["fast_mode"]
+    return None
+
+
 def backup_selected_files():
     """
     Command-line entry point for creating a backup.
@@ -323,8 +439,20 @@ def backup_selected_files():
 
     destination_root = input("Destination folder for the backup (leave blank for current folder): ").strip() or "."
     include_subfolders = input("Include subfolders? (y/n): ").strip().lower() == "y"
+    fast_mode = input("Use fast mode? This skips disk checks and metadata (y/n): ").strip().lower() == "y"
+    if fast_mode:
+        print(
+            "WARNING: Fast mode skips disk-space verification and metadata preservation. "
+            "Use only for very large backups when speed is essential."
+        )
 
-    create_backup(selected_sources, destination_root, include_subfolders=include_subfolders, logger=print)
+    create_backup(
+        selected_sources,
+        destination_root,
+        include_subfolders=include_subfolders,
+        fast_mode=fast_mode,
+        logger=print,
+    )
 
 
 def backup_from_dialogs(parent=None):
@@ -337,6 +465,16 @@ def backup_from_dialogs(parent=None):
     if not destination_root:
         return None
 
-    include_subfolders = messagebox.askyesno("Include subfolders?", "Include subfolders in the backup?")
-    return create_backup(selected_sources, destination_root, include_subfolders=include_subfolders, logger=print)
+    options = select_backup_options(parent=parent)
+    if options is None:
+        return None
+
+    include_subfolders, fast_mode = options
+    return create_backup(
+        selected_sources,
+        destination_root,
+        include_subfolders=include_subfolders,
+        fast_mode=fast_mode,
+        logger=print,
+    )
 

@@ -105,4 +105,4 @@ Updated the Cropping mechanic in the image reformatter so you can dynamically cr
 - Added dpi changing to the image reformatter. Added a iteration function in the image reformatter.
 
 ## v1.2.7
-- Created the file backup tool (create_backup.py). Changed it so the user can select multiple files/folders at once and store them in a backup folder.
+- Created the file backup tool (create_backup.py). Changed it so the user can select multiple files/folders at once and store them in a backup folder. Ruduced startup overhead by combining the file scanning and size estimation into a single pass. Removed unnecessary sorting for directory traversal. Disabled per-file log output unless requested. Added a fast mode. Be careful as it skips disk-space verification, skips metadata preservation, and avoids extra logging overhead.
