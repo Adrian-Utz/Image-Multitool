@@ -27,8 +27,8 @@ An all-in-one tool for bulk image re-formatting, file renaming, and file managem
 │  Tools (Left Panel)     │  Status & Controls (Top Right)   │
 │                         │  ├─ Status: Idle/Running         │
 │  • Count files          │  ├─ Task Counter                 │
-│  • List files           │  └─ Cancel Button                │
-│  • Search & Copy        │                                  │
+│  • List files           │  ├─ Cancel Button                │
+│  • Search & Copy        │  └─ (Optional)Start Button       │
 │  • Backup Files         │                                  │
 │  • Image Reformat       │                                  │
 │  • Excel Rename         │                                  │
