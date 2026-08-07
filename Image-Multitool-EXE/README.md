@@ -3,7 +3,7 @@
 A comprehensive file management and processing application with a modern, responsive GUI. Convert images, rename files using Excel data, search and copy files, download images from URLs, compare folders, and more—all with real-time progress tracking and background threading.
 
 **Version:** 1.2.8  
-**Last Updated:** August 5, 2026  
+**Last Updated:** August 7, 2026  
 **Status:** ✓ Production Ready
 
 ## Features
