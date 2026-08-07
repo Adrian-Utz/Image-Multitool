@@ -74,7 +74,6 @@ All included in `requirements.txt`:
 | requests | HTTP downloads |
 | tqdm | Progress bars (disabled in GUI mode, only for CLI) |
 | jinja2 | A very fast and expressive template engine |
-| pillow-heif | Ability to convert to heif files |
 
 ### Launching the Application
 
