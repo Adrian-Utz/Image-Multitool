@@ -121,13 +121,13 @@ pip install pyinstaller
 │  • Count files          │  ├─ Task Counter                 │
 │  • List files           │  ├─ Cancel Button                │
 │  • Search & Copy        │  └─ (Optional)Start Button       │
-│  • Backup Files         │                                  │
 │  • Image Reformat       │                                  │
 │  • Excel Rename         │                                  │
 │  • TXT ↔ Excel          │                                  │
 │  • Image Downloader     │  Active Tasks Queue              │
 │  • Folder Compare       │  ├─ Running tasks                │
-│                         │  └─ Pending tasks                │
+│  • Backup Files         │  └─ Pending tasks                │
+│                         │                                  │
 │  [Options]              │                                  │
 │  [Exit]                 │  Log Area (scrollable)           │
 │                         │  [Real-time operation output]    │
