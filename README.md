@@ -2,7 +2,8 @@
 
 An all-in-one tool for bulk image re-formatting, file renaming, and file management.
 
-## Check out the Discussions tab to suggest features!
+## Check out the Discussions tab to suggest features!  
+## For the full README look inside the folder.
 
 ## Features
 - **Count Files by Extension** — Analyze file distribution in a folder with optional subfolder traversal.
@@ -29,13 +30,13 @@ An all-in-one tool for bulk image re-formatting, file renaming, and file managem
 │  • Count files          │  ├─ Task Counter                 │
 │  • List files           │  ├─ Cancel Button                │
 │  • Search & Copy        │  └─ (Optional)Start Button       │
-│  • Backup Files         │                                  │
 │  • Image Reformat       │                                  │
 │  • Excel Rename         │                                  │
 │  • TXT ↔ Excel          │                                  │
 │  • Image Downloader     │  Active Tasks Queue              │
 │  • Folder Compare       │  ├─ Running tasks                │
-│                         │  └─ Pending tasks                │
+│  • Backup Files         │  └─ Pending tasks                │
+│                         │                                  │
 │  [Options]              │                                  │
 │  [Exit]                 │  Log Area (scrollable)           │
 │                         │  [Real-time operation output]    │
