@@ -43,6 +43,7 @@ a = Analysis(
         'konami',
         'options',
         'create_backup',
+        'check_for_update',
         'PIL',
         'pandas',
         'numpy',

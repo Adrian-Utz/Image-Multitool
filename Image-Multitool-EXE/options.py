@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 
 #This is the Options window. Here we can add Theme switchers, Memory settings, and tool starting options.
 
@@ -120,8 +120,10 @@ class OptionsWindow:
         ttk.Checkbutton(content, text="Auto-start queue", variable=self.auto_start_var, command=self._toggle_auto_start).grid(row=3, column=0, columnspan=2, sticky="w", pady=4)
 
         ttk.Label(content, text="More options can be added here later.", foreground="gray").grid(row=4, column=0, columnspan=2, sticky="w", pady=(10, 0))
+        # Button to force an update check via the GUI
+        ttk.Button(content, text="Check for updates", command=self._check_updates).grid(row=5, column=0, columnspan=2, sticky="ew", pady=(8, 0))
 
-        ttk.Button(content, text="Close", command=self.window.destroy).grid(row=5, column=0, columnspan=2, sticky="ew", pady=(12, 0))
+        ttk.Button(content, text="Close", command=self.window.destroy).grid(row=6, column=0, columnspan=2, sticky="ew", pady=(12, 0))
 
     #Call this to set the GUI to light mode
     def _set_light_mode(self):
@@ -134,3 +136,24 @@ class OptionsWindow:
     #Call this to toggle the queue's auto-start option
     def _toggle_auto_start(self):
         set_auto_start(self.gui, self.auto_start_var.get())
+
+    def _check_updates(self):
+        """Trigger a forced update check using the main GUI's API."""
+        try:
+            if hasattr(self.gui, 'trigger_update_check'):
+                self.gui.trigger_update_check(force=True)
+            else:
+                # fallback: import and run check directly
+                import check_for_update
+                available, local, latest = check_for_update.is_update_available(force=True)
+                if latest is None:
+                    messagebox.showinfo("Update Check", "Could not determine latest version from GitHub.")
+                    return
+                if available:
+                    if messagebox.askyesno("Update available", f"A new version ({latest}) is available. Open releases page?"):
+                        if not check_for_update.open_releases_page():
+                            messagebox.showinfo("Update Check", f"Could not open browser automatically.\n\nOpen this URL manually:\n{check_for_update.get_latest_release_url()}")
+                else:
+                    messagebox.showinfo("Update Check", f"You are up to date. Latest: {latest}")
+        except Exception:
+            messagebox.showinfo("Update Check", "Update check failed.")

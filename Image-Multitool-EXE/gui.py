@@ -1,8 +1,9 @@
-import os
-import sys
 import tkinter as tk
 import concurrent.futures
 import threading
+
+import check_for_update
+from version import VERSION
 
 from tkinter import ttk, filedialog, messagebox, simpledialog
 from collections import deque
@@ -21,11 +22,7 @@ from gui_helpers import (
     resource_path,
 )
 from konami import KonamiEasterEgg
-from options import OptionsWindow, apply_theme, set_auto_start, set_dark_mode, set_light_mode
-
-#Version information! Change this variable when you update the application to keep track of versions in the UI and logs.
-#Follow semantic versioning (major.minor.patch) for clarity.
-VERSION = "1.2.7"
+from options import OptionsWindow, apply_theme, set_dark_mode, set_light_mode
 
 #Description:
 #This is the main GUI application layer that integrates all the tools into a single interface. 
@@ -39,13 +36,14 @@ VERSION = "1.2.7"
 
 #Written by: AJ Utz - and a little bit with the Ai Agent
 #Written on: 3/19/2026
-#Last updated: 8/3/2026
+#Last updated: 8/5/2026
 
 class GUI:
     def __init__(self, root):
         self.root = root
         root.title(f"Multitool GUI v{VERSION}")
         root.state("zoomed")  # Start maximized
+        root.protocol("WM_DELETE_WINDOW", self._on_exit)
 
         # Executor used to run tasks. We'll orchestrate submissions so only one
         # task runs at a time regardless of executor worker count.
@@ -78,12 +76,12 @@ class GUI:
             ("Count files by extension", self.on_count_files, "Requires: A folder to scan for files."),
             ("List filenames", self.on_list_files, "Requires: A folder to list files from."),
             ("Search & Copy", self.on_search_files, "Requires: A source folder to search, search term or .txt file, and destination folder."),
-            ("Backup files", self.on_backup_files, "Requires: One or more files/folders to back up and a destination folder."),
             ("Image reformat", self.on_image_reformat, "Requires: A folder containing images to reformat."),
             ("Excel rename", self.on_rename_excel, "Requires: An Excel file with renaming data and a folder with images."),
             ("TXT <-> Excel Compare", self.on_compare_txt_excel, "Requires: A .txt file, an Excel file (.xlsx or .xls), and a column name."),
             ("Excel image downloader", self.on_download_from_excel, "Requires: An Excel file with image URLs and column names."),
             ("Folder compare", self.on_folder_compare, "Requires: Two folders to compare."),
+            ("Backup files", self.on_backup_files, "Requires: One or more files/folders to back up and a destination folder."),
         ]
 
         #Create buttons for each tool with help buttons
@@ -100,7 +98,7 @@ class GUI:
         #Exit button at the bottom of the left pane with a separator above it
         ttk.Separator(left, orient="horizontal").pack(fill="x", pady=8)
         ttk.Button(left, text="Options", width=28, command=self._open_options).pack(pady=(0, 6))
-        ttk.Button(left, text="Exit", width=28, command=root.quit).pack()
+        ttk.Button(left, text="Exit", width=28, command=self._on_exit).pack() #Changed it so the exit button works with terminal, IDLE, and EXE runs
 
         # Right pane (status + options + log)
         self.right = ttk.Frame(root, padding=(10, 10))
@@ -176,6 +174,12 @@ class GUI:
         self._update_start_queue_button_state()
         self._update_status_idle()
 
+        # Schedule a background update check (non-forced) so the GUI can notify the user
+        try:
+            self.executor.submit(self._run_update_check, False)
+        except Exception:
+            pass
+
         # Bottom progress bar
         bottom = ttk.Frame(right)
         bottom.grid(row=2, column=0, sticky="ew", pady=(8, 0))
@@ -200,6 +204,77 @@ class GUI:
     def _open_options(self):
         """Open the separate options dialog."""
         OptionsWindow(self.root, self)
+
+    def _on_exit(self):
+        """Gracefully close the app and stop background workers."""
+        try:
+            # Do not wait on worker threads during shutdown.
+            self.executor.shutdown(wait=False, cancel_futures=True)
+        except TypeError:
+            # Compatibility fallback for older Python signatures.
+            try:
+                self.executor.shutdown(wait=False)
+            except Exception:
+                pass
+        except Exception:
+            pass
+
+        try:
+            self.root.destroy()
+        except Exception:
+            pass
+
+    def trigger_update_check(self, force=False):
+        """Public API for other UI components to trigger an update check.
+
+        Runs the check in the GUI's executor so it doesn't block the main thread.
+        """
+        try:
+            self.executor.submit(self._run_update_check, bool(force))
+        except Exception:
+            # fallback to threading if executor fails
+            t = threading.Thread(target=self._run_update_check, args=(bool(force),), daemon=True)
+            t.start()
+
+    def _run_update_check(self, force=False):
+        """Background worker that calls the update checker and updates the UI."""
+        try:
+            available, local, latest = check_for_update.is_update_available(force=force)
+        except Exception as e:
+            # If something goes wrong, log it and return
+            try:
+                self.log(f"Update check failed: {e}")
+            except Exception:
+                pass
+            return
+
+        def _notify():
+            # If latest is None then the check couldn't determine a version (or was rate-limited)
+            if latest is None:
+                # only notify when forced
+                if force:
+                    messagebox.showinfo("Update Check", "Could not determine latest version from GitHub.")
+                return
+
+            self.log(f"Local version: {local or '(unknown)'}; Latest: {latest}")
+            if available:
+                open_now = messagebox.askyesno("Update available", f"A new version ({latest}) is available. Open releases page?")
+                if open_now:
+                    try:
+                        if not check_for_update.open_releases_page():
+                            self.log("Could not open release page automatically. URL: " + check_for_update.get_latest_release_url())
+                    except Exception:
+                        pass
+            else:
+                if force:
+                    messagebox.showinfo("Update Check", f"You are up to date. Latest: {latest}")
+
+        # Schedule the UI notification on the main thread
+        try:
+            self._safe_after(0, _notify)
+        except Exception:
+            # best-effort: just call it
+            _notify()
 
     def _set_light_mode(self):
         """Switch the interface to light theme."""
@@ -509,7 +584,7 @@ class GUI:
                     self._safe_after(500, _finish)
 
                 future.add_done_callback(_on_done)
-
+        
         if should_update_idle:
             self._update_status_idle()
             self._update_queue_display()
@@ -771,33 +846,6 @@ class GUI:
             parent_dest=parent_dest,
         )
 
-    def on_backup_files(self):
-        import create_backup as cb
-
-        selected_files = cb.select_backup_sources(parent=self.root)
-        if not selected_files:
-            return
-
-        destination = filedialog.askdirectory(title="Select backup destination", parent=self.root)
-        if not destination:
-            return
-
-        options = cb.select_backup_options(parent=self.root)
-        if options is None:
-            return
-
-        include, fast_mode = options
-        task_name = f"Backing up {len(selected_files)} selected item(s)"
-        self.log(f"[STARTING] {task_name}")
-        self.run_in_thread(
-            cb.create_backup,
-            task_name=task_name,
-            sources=selected_files,
-            destination_root=destination,
-            include_subfolders=include,
-            fast_mode=fast_mode,
-            logger=self.log,
-        )
 
     def on_image_reformat(self):
         folder = filedialog.askdirectory(title="Select folder with images")
@@ -1022,6 +1070,33 @@ class GUI:
             logger=self.log
         )
 
+    def on_backup_files(self):
+        import create_backup as cb
+
+        selected_files = cb.select_backup_sources(parent=self.root)
+        if not selected_files:
+            return
+
+        destination = filedialog.askdirectory(title="Select backup destination", parent=self.root)
+        if not destination:
+            return
+
+        options = cb.select_backup_options(parent=self.root)
+        if options is None:
+            return
+
+        include, fast_mode = options
+        task_name = f"Backing up {len(selected_files)} selected item(s)"
+        self.log(f"[STARTING] {task_name}")
+        self.run_in_thread(
+            cb.create_backup,
+            task_name=task_name,
+            sources=selected_files,
+            destination_root=destination,
+            include_subfolders=include,
+            fast_mode=fast_mode,
+            logger=self.log,
+        )
 
 def main():
     root = tk.Tk()

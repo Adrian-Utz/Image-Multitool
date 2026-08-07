@@ -2,8 +2,8 @@
 
 A comprehensive file management and processing application with a modern, responsive GUI. Convert images, rename files using Excel data, search and copy files, download images from URLs, compare folders, and more—all with real-time progress tracking and background threading.
 
-**Version:** 1.2.7  
-**Last Updated:** August 3, 2026  
+**Version:** 1.2.8  
+**Last Updated:** August 5, 2026  
 **Status:** ✓ Production Ready
 
 ## Features
@@ -28,6 +28,7 @@ A comprehensive file management and processing application with a modern, respon
 - ✓ **Cancel Operations** — Stop long-running tasks with a single click (fixed in v1.1.3)
 - ✓ **Thread-Safe Output** — Proper synchronization prevents log corruption
 - ✓ **Light/Dark Mode** — User can change their background to be easier on the eyes (new in v1.1.3)
+- ✓ **EXE Version Checking** — Around once a week the exe version will check the github repo for the latest version (new in v1.2.8)
 
 ## Installation
 
@@ -60,12 +61,28 @@ No Python installation required!
 
 ## Usage
 
+### Dependencies
+
+All included in `requirements.txt`:
+
+| Package | Purpose |
+|---------|---------|
+| Pillow | Image processing (convert, resize, compress) |
+| pillow-heif | HEIC/HEIF read/write support for Pillow |
+| pandas | Excel file reading/writing |
+| openpyxl | Excel engine for pandas |
+| requests | HTTP downloads |
+| tqdm | Progress bars (disabled in GUI mode, only for CLI) |
+| jinja2 | A very fast and expressive template engine |
+| pillow-heif | Ability to convert to heif files |
+
 ### Launching the Application
 
 **From Source:**
 ```bash
 python gui.py
 ```
+Or just use a editor like vscode, or python's IDLE.
 
 **From Executable:**
 - Double-click `Multitool.exe` (or right-click → Open)
@@ -102,8 +119,8 @@ pip install pyinstaller
 │  Tools (Left Panel)     │  Status & Controls (Top Right)   │
 │                         │  ├─ Status: Idle/Running         │
 │  • Count files          │  ├─ Task Counter                 │
-│  • List files           │  └─ Cancel Button                │
-│  • Search & Copy        │                                  │
+│  • List files           │  ├─ Cancel Button                │
+│  • Search & Copy        │  └─ (Optional)Start Button       │
 │  • Backup Files         │                                  │
 │  • Image Reformat       │                                  │
 │  • Excel Rename         │                                  │
@@ -199,30 +216,21 @@ multitool/
 ├── compare_txt_to_excel.py           # TXT/Excel comparison tool
 ├── web_downloading.py                # Image downloader (multi-threaded)
 ├── folder_compare.py                 # Folder diff tool (GUI wrapper)
-├── gui_helper.py                     # Helper functions for the GUI
+├── gui_helpers.py                    # Helper functions for the GUI
 ├── options.py                        # Seperate Options window
 ├── requirements.txt                  # Python dependencies
-├── multitool.spec                    # PyInstaller spec (auto-generated)
+├── multitool.spec                    # PyInstaller build config
 ├── README.md                         # This file
-├── changelog.md                      # Documentation of Changes
+├── docs/
+│   └── changelog.md                  # Documentation of changes
+├── tests/
+│   ├── test_smoke.py
+│   ├── test_smoke_extended.py
+│   └── ...                           # Remaining test modules
 └── dist/
     └── Multitool.exe                 # Standalone executable (64 MB)
 ```
 
-## Dependencies
-
-All included in `requirements.txt`:
-
-| Package | Purpose |
-|---------|---------|
-| Pillow | Image processing (convert, resize, compress) |
-| pillow-heif | HEIC/HEIF read/write support for Pillow |
-| pandas | Excel file reading/writing |
-| openpyxl | Excel engine for pandas |
-| requests | HTTP downloads |
-| tqdm | Progress bars (disabled in GUI mode, only for CLI) |
-| jinja2 | A very fast and expressive template engine |
-| pillow-heif | Ability to convert to heif files |
 
 ## Troubleshooting
 
