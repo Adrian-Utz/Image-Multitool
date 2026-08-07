@@ -223,10 +223,6 @@ multitool/
 ├── README.md                         # This file
 ├── docs/
 │   └── changelog.md                  # Documentation of changes
-├── tests/
-│   ├── test_smoke.py
-│   ├── test_smoke_extended.py
-│   └── ...                           # Remaining test modules
 └── dist/
     └── Multitool.exe                 # Standalone executable (64 MB)
 ```
