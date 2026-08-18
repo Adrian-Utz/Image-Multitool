@@ -109,7 +109,7 @@ def apply_quantization(img, max_colors=256, method="median_cut", dither=False, p
     """
     if method == "median_cut":
         base = img.convert("RGB") if has_alpha else img
-        quantized = base.convert("P", palette=Image.Palette.ADAPTIVE, colors=max_colors)
+        quantized = base.convert("P", palette=Image.Palette.ADAPTIVE, colors=max_colors, dither=_dither_setting(dither))
         if has_alpha:
             alpha = img.getchannel("A")
             rgba = Image.new("RGBA", img.size)
