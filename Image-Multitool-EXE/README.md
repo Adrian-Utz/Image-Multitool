@@ -3,7 +3,7 @@
 A comprehensive file management and processing application with a modern, responsive GUI. Convert images, rename files using Excel data, search and copy files, download images from URLs, compare folders, and more—all with real-time progress tracking and background threading.
 
 **Version:** 1.2.9  
-**Last Updated:** August 17, 2026  
+**Last Updated:** August 18, 2026  
 **Status:** ✓ Production Ready
 
 ## Features
@@ -55,7 +55,7 @@ A comprehensive file management and processing application with a modern, respon
 No Python installation required!
 
 1. **Download or build:**
-   - Pre-built: `dist/Multitool.exe` (64 MB)
+   - Pre-built: Download [Multitool.exe](https://github.com/Adrian-Utz/Image-Multitool/releases) from the release list. (64 MB)
    - Double-click to run
 
 2. **That's it!** The GUI will launch with all dependencies bundled.
