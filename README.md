@@ -10,13 +10,14 @@ An all-in-one tool for bulk image re-formatting, file renaming, and file managem
 - **List Filenames** — List and export files by extension with optional txt output.
 - **Search & Copy** — Find files by name and optionally copy matches to a timestamped folder.
 - **Image Reformat/Convert** — Batch convert images between formats (jpg, png, webp, tiff, bmp, avif, heic, heif) with optional resizing, compression, and PPI settings.
+- **Image Optimization** — Batch optimize images to improve their size. Useful for websites.
 - **Excel Rename Tool** — Rename files based on Excel data mapping (e.g., match image file numbers to SKU names).
 - **TXT ↔ Excel Compare** — Compare a text file against an Excel column to find matches and missing items.
 - **Excel Image Downloader** — Download images from URLs listed in an Excel file with multi-threaded support.
 - **Folder Comparison** — Compare two folders and find files that differ, with optional extension-ignore mode.
 - **File Backup** — Backup your files from multiple folder locations all at once.
 
-#### To run in commandline: run multitool.py
+#### To run in command line: run multitool.py
 #### To run as a GUI: run gui.py
 #### To make the EXE you need pyinstaller (Or you can just download it in the release tab)
 
@@ -31,6 +32,7 @@ An all-in-one tool for bulk image re-formatting, file renaming, and file managem
 │  • List files           │  ├─ Cancel Button                │
 │  • Search & Copy        │  └─ (Optional)Start Button       │
 │  • Image Reformat       │                                  │
+│  • Image Optimization   │                                  │
 │  • Excel Rename         │                                  │
 │  • TXT ↔ Excel          │                                  │
 │  • Image Downloader     │  Active Tasks Queue              │
