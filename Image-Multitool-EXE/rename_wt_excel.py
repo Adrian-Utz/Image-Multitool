@@ -1,25 +1,26 @@
 import os
 import re
-import math
 import shutil
 import pandas as pd
 
-#This program is to make bulk renaming faster. This program should look at the filename, find the cell with matching info, then rename it to the SKU name.
+"""
+This program is to make bulk renaming faster. This program should look at the filename, find the cell with matching info, then rename it to the SKU name.
 
-#Change Log:
-#Added Comments to clearly explain each step of the process.
-#Added error handling for file operations to catch and report any issues during copying.
-#Added a summary at the end to report how many files were copied, how many were missing, how many were skipped due to existing files, and how many errors occurred.
-#Added Documentation
-#Added the ignore_file_extension option to allow matching based on base name regardless of file extension, providing more flexibility in handling different image formats.
-#Added cancellation support.
-#Fixed a potential bug. This line: print(f"Copied: {source_filename} -> {output_path}\{new_filename}") was using a single backslash which could cause issues on some systems. 
-#I changed it to this: print(f"Copied: {source_filename} -> {output_path}\\{new_filename}") could be seen as a invalid escape sequence. 
-#By using a double backslash, we ensure that it is treated as a literal backslash in the output string, which is important for correctly displaying file paths on Windows systems.
+Change Log:
+Added Comments to clearly explain each step of the process.
+Added error handling for file operations to catch and report any issues during copying.
+Added a summary at the end to report how many files were copied, how many were missing, how many were skipped due to existing files, and how many errors occurred.
+Added Documentation
+Added the ignore_file_extension option to allow matching based on base name regardless of file extension, providing more flexibility in handling different image formats.
+Added cancellation support.
+Fixed a potential bug. This line: print(f"Copied: {source_filename} -> {output_path}\{new_filename}") was using a single backslash which could cause issues on some systems. 
+I changed it to this: print(f"Copied: {source_filename} -> {output_path}\\{new_filename}") could be seen as a invalid escape sequence. 
+By using a double backslash, we ensure that it is treated as a literal backslash in the output string, which is important for correctly displaying file paths on Windows systems.
 
-#Written by: AJ Utz on: 1/14/2025
-
-#Last Edit: 5/8/2026
+Written by: AJ Utz
+Written on: 1/14/2026
+Last Edit: 8/17/2026
+"""
 
 def sanitize_filename(name):
 

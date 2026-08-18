@@ -19,8 +19,9 @@ Behavior:
 - Rate-limits checks to once per 7 days by default (stored in a JSON file
   in the user's home directory). Pass `force=True` to bypass the cache.
 
-Written by AJ Utz on: 8/3/2026
-Last Updated: 8/5/2026
+Written by AJ Utz
+Written on: 8/3/2026
+Last Updated: 8/17/2026
 """
 
 OWNER = "Adrian-Utz"
@@ -107,6 +108,8 @@ def get_latest_version():
     Returns the version string (e.g., 'v1.2.3' or '1.2.3') or None on error.
     """
     headers = {"Accept": "application/vnd.github.v3+json"}
+    #To bypass github's limit rate, add a environment variable named 'GITHUB_TOKEN' to your machine. 
+    #The program will use that, and you hopefully won't see the "Too many requests" message.
     token = os.environ.get('GITHUB_TOKEN')
     if token:
         headers['Authorization'] = f'token {token}'
@@ -151,6 +154,9 @@ def _save_settings(d):
 
 
 def should_check(force=False, days_between=7):
+    """
+    Load and check the json file, compair times and return the days between. 
+    """
     if force:
         return True
     s = _load_settings()
@@ -197,6 +203,9 @@ def is_update_available(force=False):
 
 
 if __name__ == '__main__':
+    """
+    Main entrance to the update checker. 
+    """
     force = '--force' in sys.argv or '-f' in sys.argv
     if not should_check(force=force):
         print('Update check skipped: already checked recently. Use --force to bypass the cache.')

@@ -4,17 +4,20 @@ import shutil
 import datetime
 import concurrent.futures
 
-#This module provides a file search and copy tool that can be used both in a command-line interface and integrated into a GUI application. 
-#It allows users to search for files based on specified terms, optionally including subfolders, and copy the matched files to a new folder with a timestamped name.
-#Added cancellation support
+"""
+This module provides a file search and copy tool that can be used both in a command-line interface and integrated into a GUI application. 
+It allows users to search for files based on specified terms, optionally including subfolders, and copy the matched files to a new folder with a timestamped name.
+Added cancellation support
 
-#Written by: AJ Utz on 4/8/2026
-#Last updated: 6/11/2026
+Written by: AJ Utz
+Written on: 4/8/2026
+Last updated: 8/17/2026
 
-#Change Log:
-#Changed the gui version to allow a .txt file to be used for search terms, and added support for that in the search_files_gui function.
-#Optimized the search_files_gui function to support searching multiple root folders in parallel using a thread pool, 
-#which can speed up searches across multiple directories.
+Change Log:
+Changed the gui version to allow a .txt file to be used for search terms, and added support for that in the search_files_gui function.
+Optimized the search_files_gui function to support searching multiple root folders in parallel using a thread pool, 
+which can speed up searches across multiple directories.
+"""
 
 def filename_matches_search_term(filename, term):
     """Return True when the filename contains the search term as a whole segment.
@@ -38,6 +41,7 @@ def search_files():
 
     print("\n===== File Search Tool =====")
 
+    #Initilize destination variable
     dest = None
 
     #Ask once if the user wants to use a .txt file for search terms
@@ -45,6 +49,7 @@ def search_files():
     print("Would you like to supply a .txt file for your seach?")
     txt_file = input("Type .txt file name here (leave blank to enter manually each search): ").strip()
 
+    #Initilize the search terms list
     search_terms = []
 
     if txt_file:
@@ -82,6 +87,7 @@ def search_files():
         else:
                 current_terms = search_terms
 
+        #Initilize the matches list
         matches = []
 
         #Search for files
@@ -121,7 +127,7 @@ def search_files():
         #Copy option
         copy_choice = input("\nCopy these files to the session folder? (y/n): ").strip().lower()
         if copy_choice == "y" and matches:
-
+            
             if dest is None:
                 parent_dest = input("Parent folder for the copied files (leave blank for current folder): ").strip() or "."
 

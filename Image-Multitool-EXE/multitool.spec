@@ -1,6 +1,9 @@
 # -*- mode: python ; coding: utf-8 -*-
 
 import os
+import sys
+import tempfile
+import zipfile
 from PyInstaller.utils.hooks import collect_dynamic_libs, collect_submodules
 
 block_cipher = None
@@ -23,12 +26,47 @@ try:
 except ModuleNotFoundError:
     pass
 
+tcl_tk_datas = []
+if sys.version_info >= (3, 14):
+    tcl_root = os.path.join(sys.base_prefix, 'tcl')
+    tcl_archive = os.path.join(tcl_root, 'libtcl9.0.4.zip')
+    tk_archive = os.path.join(tcl_root, 'libtk9.0.4.zip')
+    if os.path.isfile(tcl_archive) and os.path.isfile(tk_archive):
+        tcl_tk_build_root = tempfile.mkdtemp(prefix='multitool-tcl-tk-')
+        tcl_data_root = os.path.join(tcl_tk_build_root, '_tcl_data')
+        tk_data_root = os.path.join(tcl_tk_build_root, '_tk_data')
+        with zipfile.ZipFile(tcl_archive) as archive:
+            for member in archive.infolist():
+                relative_name = member.filename.removeprefix('tcl_library/')
+                if relative_name:
+                    archive.extract(member, tcl_data_root)
+                    extracted_path = os.path.join(tcl_data_root, member.filename)
+                    target_path = os.path.join(tcl_data_root, relative_name)
+                    if extracted_path != target_path and os.path.exists(extracted_path):
+                        os.makedirs(os.path.dirname(target_path), exist_ok=True)
+                        os.replace(extracted_path, target_path)
+        with zipfile.ZipFile(tk_archive) as archive:
+            for member in archive.infolist():
+                relative_name = member.filename.removeprefix('tk_library/')
+                if relative_name:
+                    archive.extract(member, tk_data_root)
+                    extracted_path = os.path.join(tk_data_root, member.filename)
+                    target_path = os.path.join(tk_data_root, relative_name)
+                    if extracted_path != target_path and os.path.exists(extracted_path):
+                        os.makedirs(os.path.dirname(target_path), exist_ok=True)
+                        os.replace(extracted_path, target_path)
+        tcl_tk_datas.extend([
+            (tcl_data_root, '_tcl_data'),
+            (tk_data_root, '_tk_data'),
+        ])
+
 a = Analysis(
     ['gui.py'],
     pathex=[base_path],
     binaries=pillow_heif_binaries,
     datas=[
-        ('assets/codec.wav', 'assets')
+        ('assets/codec.wav', 'assets'),
+        *tcl_tk_datas,
     ],
     hiddenimports=[
         'count_files_by_extension',
@@ -44,6 +82,7 @@ a = Analysis(
         'options',
         'create_backup',
         'check_for_update',
+        'image_optimization',
         'PIL',
         'pandas',
         'numpy',

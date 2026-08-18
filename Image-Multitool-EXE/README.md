@@ -2,8 +2,8 @@
 
 A comprehensive file management and processing application with a modern, responsive GUI. Convert images, rename files using Excel data, search and copy files, download images from URLs, compare folders, and more—all with real-time progress tracking and background threading.
 
-**Version:** 1.2.8  
-**Last Updated:** August 7, 2026  
+**Version:** 1.2.9  
+**Last Updated:** August 17, 2026  
 **Status:** ✓ Production Ready
 
 ## Features
@@ -13,6 +13,7 @@ A comprehensive file management and processing application with a modern, respon
 - **List Filenames** — List and export files by extension with optional txt output.
 - **Search & Copy** — Find files by name and optionally copy matches to a timestamped folder.
 - **Image Reformat/Convert** — Batch convert images between formats (jpg, png, webp, tiff, bmp, avif, heic, heif) with optional resizing, compression, and PPI settings.
+- **Image Optimization** — Batch optimize images to improve their size. Useful for websites.
 - **Excel Rename Tool** — Rename files based on Excel data mapping (e.g., match image file numbers to SKU names).
 - **TXT ↔ Excel Compare** — Compare a text file against an Excel column to find matches and missing items.
 - **Excel Image Downloader** — Download images from URLs listed in an Excel file with multi-threaded support.
@@ -121,6 +122,7 @@ pip install pyinstaller
 │  • List files           │  ├─ Cancel Button                │
 │  • Search & Copy        │  └─ (Optional)Start Button       │
 │  • Image Reformat       │                                  │
+│  • Image Optimization   │                                  │
 │  • Excel Rename         │                                  │
 │  • TXT ↔ Excel          │                                  │
 │  • Image Downloader     │  Active Tasks Queue              │
@@ -210,6 +212,7 @@ multitool/
 ├── list_files_by_extension.py        # List files tool (GUI wrapper)
 ├── search_files.py                   # Search & copy tool (GUI wrapper)
 ├── image_reformatting.py             # Image conversion (batch processor)
+├── image_optimization.py             # Image optimization(uses octree and median cut)
 ├── create_backup.py                  # File backup tool 
 ├── rename_wt_excel.py                # Excel rename tool (file mapping)
 ├── compare_txt_to_excel.py           # TXT/Excel comparison tool
@@ -319,7 +322,7 @@ count_files_by_extension("/path/to/folder", include_subfolders=True, logger=my_l
 
 Tested on Windows 11, Intel i7-9700, 32GB RAM:
 
-| Operation | Time (100 MB data) |
+| Operation | Time (100 MB data unless told otherwise) |
 |-----------|------------------|
 | File counting (10k files) | ~0.5 seconds |
 | Image batch convert (50 MB → JPG) | ~2-3 seconds |
@@ -342,6 +345,7 @@ For issues, feature requests, or improvements:
 ## License
 
 **This application is provided as-is for personal and commercial use.**
+**I take no resposibility on what you decide what to use this program for.**
 
 ---
 

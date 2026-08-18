@@ -56,16 +56,13 @@
 - Changed some of the Popups in the web_downloading section. Making it more user friendly. Added the gui_helpers file to cut down on the main gui file size.
 
 ## v1.2.2
-- Optimized the search_files_gui function to support searching multiple root folders in parallel using a thread pool, which can speed up searches across multiple directories. Added the following to search_files: Pre-compiled patterns(Regex patterns are compiled once before the search, not once every filename check.). Batched into groups of 100. Early termination. _matches_any_pattern() function.
-The biggest improvement is the perfromance.
+- Optimized the search_files_gui function to support searching multiple root folders in parallel using a thread pool, which can speed up searches across multiple directories. Added the following to search_files: Pre-compiled patterns(Regex patterns are compiled once before the search, not once every filename check.). Batched into groups of 100. Early termination. _matches_any_pattern() function. The biggest improvement is the perfromance.
 
 ## v1.2.3
 - Added .heif and .heic support to the image reformatter. Added a total to the bottom of the count_files_by_extension program. Updated readme, fixed build commands. Fixed the task_name error in the gui. When searching for a file with a .txt file it now shows the file path.
 
 ## v1.2.4
-- Fixed the queue system, it now functions as intended. You can now queue multiple actions at once and It will work through them one at a time.
-This also fixed the progress bar problem. Fixed a crash that happened in the completion branch after the last queued task was finished. The old flow could still be updating queue/UI state in a way that re-entered the same task-lock/GUI update sequence while the final task was finishing, 
-which can lead to a crash or inconsistent Tkinter state. 
+- Fixed the queue system, it now functions as intended. You can now queue multiple actions at once and It will work through them one at a time. This also fixed the progress bar problem. Fixed a crash that happened in the completion branch after the last queued task was finished. The old flow could still be updating queue/UI state in a way that re-entered the same task-lock/GUI update sequence while the final task was finishing, which can lead to a crash or inconsistent Tkinter state. 
 
 ## v1.2.5
 - Moved the Options tab from the right side to a button just above the Exit button. Moved the color switcher to the options panel, and added a auto-start switch. Added the start button to the top, next to the cancel button. (You can only see it if auto-start is switched to off.) Fixed a crash that happened to the folder_compare tool. It assumed both selections were valid folders and called os.listdir() directly. Moved the color management to the options file. Updated the Cropping mechanic in the image reformatter so you can dynamically crop. You are no longer restricted to a square. 
@@ -78,3 +75,6 @@ which can lead to a crash or inconsistent Tkinter state.
 
 ## v1.2.8
 - Created a program that checks for the latest version on GitHub. It checks weekly for the latest version. Note: To avoid GitHub's rate limit set a token: GITHUB_TOKEN=<your_token> in environment. You can force the check to run in the options menu. Moved the version number to its own module and updated the GUI to use the version module. The update checker no longer needs to read the gui.py as a physical file at runtime. The Exit button wasn't working if you tried to run the program from pythons IDLE. That is now fixed.
+
+## v1.2.9
+- Image optimization is added to the workflow. image_optimization.py allows the user to choose the palette method ([median_cut](https://en.wikipedia.org/wiki/Median_cut), [octree](https://en.wikipedia.org/wiki/Octree)), the max palette size (2-256), dithering ([Ordered](https://en.wikipedia.org/wiki/Ordered_dithering), [Floyd-Steinberg](https://en.wikipedia.org/wiki/Floyd%E2%80%93Steinberg_dithering)), and transparency preservation. Median cut is often prefered for reducing color count while maintaining visual quality, especially in smooth and uniform image. Octree is useful for textures with complex patterns or small details, as it can handle more variation in pixel intensity. However, it might require more computational resources due to its hierarchicl structure. Added the stripping of metadata, and added _save_kargs_for(ext) which returns either PNG(optimize=True, compress_level=9) or JPEG(optimize=True). Also changed the way the program "never increases file size". I had it set up to use JPEG size assumptions, that failed once optimize=True. Added subsampleing for your jpegs/jpgs. [4:4:4](https://en.wikipedia.org/wiki/Chroma_subsampling#4:4:4), [4:2:2](https://en.wikipedia.org/wiki/Chroma_subsampling#4:2:2), and [4:2:0](https://en.wikipedia.org/wiki/Chroma_subsampling#4:2:0) are all options you can use. Fixed a problem with Tcl/Tk9.0 virtual zipfs paths. Explicitly bundle python 3.14's tcl/tk data directory. Made every step optional in the GUI.

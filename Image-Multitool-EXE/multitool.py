@@ -1,4 +1,5 @@
 import image_reformatting
+import image_optimization
 import rename_wt_excel
 import compare_txt_to_excel
 import web_downloading
@@ -8,12 +9,13 @@ import list_files_by_extension
 import count_files_by_extension
 import create_backup
 
-#This is the multitool! This file will allow you to do multiple things. See the change log for new additions.
-#This program will automatically create a __pycache__ folder with a compiled version of this code. You can delete it if you need to.
-#It is just to make it faster next time you run it.
-#I plan on making this a robust python tool you can use for file management.
+"""
+This is the multitool! This file will allow you to do multiple things. See the change log for new additions.
+This program will automatically create a __pycache__ folder with a compiled version of this code. You can delete it if you need to.
+It is just to make it faster next time you run it.
+I plan on making this a robust python tool you can use for file management.
 
-"""Change Log:
+Change Log:
 Merged list_jpg_files into this file. Added option to run it. Added the file search function. Also added the Copy function to the search.
 Updated the manual search input to allow multiple searches at once. Moved the folder creation into the if statement.
 Updated the list_files_by_extension def to make it more robust, and it can handle more file types now.
@@ -29,11 +31,11 @@ Took out all the functions in this file and put them in their own files. This ma
 Thought about making a GUI for it but I think the command line is fine for now. Maybe in the future I will add a GUI option. 
 I coded a basic GUI but it was a pain to get it to work with the progress bars and the output. I will save it for a future update when I have more time to work on it.
 Removed the GUI from this file and created a seperate GUI and EXE file.
+
+Last Update: 8/5/2026
+Written on: 12/3/2025
+Written by: AJ Utz
 """
-
-#Last Update: 8/5/2026
-
-#Written by: AJ Utz on: 12/3/2025
 
 
 def main_menu():
@@ -47,66 +49,64 @@ def main_menu():
         print("2. List filenames")
         print("3. Search and Copy files") 
         print("4. Image reformatting / conversion")
-        print("5. Excel Renaming Tool")
-        print("6. TXT <-> Excel Compare Tool")
-        print("7. Excel Image Downloader")
-        print("8. Folder Comparison Tool")
-        print("9. Backup Tool")
+        print("5. Image optimization")
+        print("6. Excel Renaming Tool")
+        print("7. TXT <-> Excel Compare Tool")
+        print("8. Excel Image Downloader")
+        print("9. Folder Comparison Tool")
+        print("10. Backup Tool")
         print("===========================")
 
-        choice = input("Select an option (0-9): ").strip()
+        choice = input("Select an option (0-10): ").strip()
 
+        """If you are running the CLI make sure you have all requirements, and files in one folder."""
         if choice == "0":
             print("Exiting the program. Goodbye!")
             break
 
-        #If you want this to run you need count_files_by_extension.py in the same folder as the multitool.py file
         elif choice == "1":
             count_files_by_extension.count_files_by_extension()
             input(RETURN_PROMPT)
 
-        #If you want this to run you need list_files_by_extension.py in the same folder as the multitool.py file
         elif choice == "2":
             list_files_by_extension.list_files_by_extension()
             input(RETURN_PROMPT)
 
-        #If you want this to run you need search_files.py in the same folder as the multitool.py file
         elif choice == "3":
             search_files.search_files()
             input(RETURN_PROMPT)
 
-        #If you want this to run you need image_reformatting.py in the same folder as the multitool.py file
         elif choice == "4":
             image_reformatting.run_image_reformatter()
             input(RETURN_PROMPT)
 
-        #If you want this to run you need rename_wt_excel.py in the same folder as the multitool.py file
         elif choice == "5":
+            image_optimization.run_image_optimizer()
+            input(RETURN_PROMPT)
+
+        elif choice == "6":
             rename_wt_excel.run_excel_image_sku_tool()
             input(RETURN_PROMPT)
 
-        #If you want this to run you need compare_txt_to_excel.py in the same folder as the multitool.py file
-        elif choice == "6":
+        elif choice == "7":
             compare_txt_to_excel.run_txt_excel_compare()
             input(RETURN_PROMPT)
         
-        #If you want this to run you need web_downloading.py in the same folder as the multitool.py file
-        elif choice == "7":
+        elif choice == "8":
             web_downloading.run_excel_image_downloader()
             input(RETURN_PROMPT)
 
-        elif choice == "8":
+        elif choice == "9":
             folder_compare.run_folder_compare()
             input(RETURN_PROMPT)
 
-        elif choice == "9":
+        elif choice == "10":
             create_backup.backup_selected_files()
             input(RETURN_PROMPT)
+
             
-
         else:
-            print("Invalid choice — please enter 1-9.")
-
+            print("Invalid choice — please enter 1-10.")
 
 
 if __name__ == "__main__":

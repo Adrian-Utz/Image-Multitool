@@ -44,27 +44,30 @@ EXT_TO_FORMAT = {
     ".heif": "HEIF",
 }
 
-#Hello! The main purpose of this program is to convert images to your desired format. Make sure you have Pillow installed on your machine before you run.
+"""
+Hello! The main purpose of this program is to convert images to your desired format. Make sure you have Pillow installed on your machine before you run.
 
-#To check if you have installed Pillow go to Command Prompt and put this command in: python -c "from PIL import Image; print(Image.__version__)"
-#If it returns a version number you have Pillow installed.
+To check if you have installed Pillow go to Command Prompt and put this command in: python -c "from PIL import Image; print(Image.__version__)"
+If it returns a version number you have Pillow installed.
 
-#If you haven't installed Pillow run this in Command Prompt.
-#Type this: python -m pip install Pillow
+If you haven't installed Pillow run this in Command Prompt.
+Type this: python -m pip install Pillow
 
-#Change Log: Split the file into 2 defs for optimization. Added file compression to the conversion script.
-#Added a if statement to check if the user wants compression.
-#Fixed a bug where the compression function wasn't activating because compress wasn't being passed to convert_image
-#Added Image resising feature, changed it so it pads the image instead of warping it
-#Converted .tif files were getting a green tint when they were converted. Added the if statement to check for CMYK format to fix this.
-#Added the ability to change the ppi of a picture.
-#Avif Support added.
-#Added cancellation support.
-#Added Crop mode for resizing.
-#Added DPI support for screen resolution.
+Change Log: Split the file into 2 defs for optimization. Added file compression to the conversion script.
+Added a if statement to check if the user wants compression.
+Fixed a bug where the compression function wasn't activating because compress wasn't being passed to convert_image
+Added Image resising feature, changed it so it pads the image instead of warping it
+Converted .tif files were getting a green tint when they were converted. Added the if statement to check for CMYK format to fix this.
+Added the ability to change the ppi of a picture.
+Avif Support added.
+Added cancellation support.
+Added Crop mode for resizing.
+Added DPI support for screen resolution.
 
-#Last updated: 7/13/2026
-#Written by: AJ Utz on 12/18/2025
+Written on: 12/18/2025
+Last updated: 8/17/2026
+Written by: AJ Utz
+"""
 
 def convert_image(input_path, output_path, target_ext, compress=False, max_size_kb=100, resize=None, resize_mode="pad", ppi=None, dpi=None, logger=print, progress_callback=None, cancel_event=None):
     try:
@@ -370,7 +373,7 @@ def main():
                     dpi=dpi_value
                 )
 
-    print(f"\nDone! Converted images are saved in: {output_folder}")
+    print(f"\nDone! Converted images are saved in: {output_folder}\n")
 
 if __name__ == "__main__":
     main()
@@ -469,7 +472,7 @@ def batch_convert_in_folder(input_folder, target_ext, compress=False, max_size_k
             if progress_callback and total_files > 0:
                 progress_callback(int((processed_files / total_files) * 100))
 
-    logger(f"\nDone! Converted images are saved in: {output_folder}")
+    logger(f"\nDone! Converted images are saved in: {output_folder}\n")
     
 
 

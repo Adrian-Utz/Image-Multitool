@@ -7,19 +7,22 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
 
 
-#This program is to download images from URLs listed in an Excel file. 
-#The user can select which columns contain the URLs, and the program will download the images to a specified folder. 
+"""
+This program is to download images from URLs listed in an Excel file. 
+The user can select which columns contain the URLs, and the program will download the images to a specified folder. 
 
-#Change Log: 
-#Changed the way file extensions are determined to be more robust, including checking the URL and content type.
-#Added better handling for HYPERLINK formulas in Excel, with warnings if they can't be parsed.
-#Added an interactive wrapper to make it easier for users to select columns and options without modifying the code directly.
-#Added handling of different types of content (images, videos, PDFs) and assigned appropriate extensions.
-#Added documentation and comments for better readability and maintainability.
-#Added cancellation support
+Change Log: 
+Changed the way file extensions are determined to be more robust, including checking the URL and content type.
+Added better handling for HYPERLINK formulas in Excel, with warnings if they can't be parsed.
+Added an interactive wrapper to make it easier for users to select columns and options without modifying the code directly.
+Added handling of different types of content (images, videos, PDFs) and assigned appropriate extensions.
+Added documentation and comments for better readability and maintainability.
+Added cancellation support
 
-#Written by AJ Utz on: 2/26/2026 
-#Last Edit: 5/22/2026
+Written by AJ Utz on: 2/26/2026 
+Written on: 2/26/2026
+Last Edit: 8/17/2026
+"""
 
 def download_from_excel(
     file_name,

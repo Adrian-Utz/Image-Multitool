@@ -1,13 +1,16 @@
 import os
 import pandas as pd
 
-#Greetings! This tool will help see which photos you are missing!
+"""
+Greetings! This tool will help see which files you are missing!
 
-#Changelog: Fixed bug where it was comparing the xlsx to txt instead of txt to xlsx.
-#Added cancellation support.
+Changelog: Fixed bug where it was comparing the xlsx to txt instead of txt to xlsx.
+Added cancellation support.
 
-#Written by: AJ Utz on: 1/28/2026
-#Last Update: 5/8/2026
+Written by: AJ Utz
+Written on: 1/28/2026
+Last Update: 5/8/2026
+"""
 
 def run_txt_excel_compare():
     print("\n==== TXT <-> Excel Column Compare Tool ====")

@@ -1,10 +1,13 @@
 import os
 from tkinter import filedialog, messagebox, simpledialog
 
-#This file contains helper methods for the GUI to keep the main code cleaner and more focused on logic rather than UI details.
+"""
+This file contains helper methods for the GUI to keep the main code cleaner and more focused on logic rather than UI details.
 
-#Written by: AJ Utz on 5/20/2026
-#Last updated: 7/3/2026
+Written by: AJ Utz
+Written on: 5/20/2026
+Last updated: 7/3/2026
+"""
 
 try:
     import pandas as pd

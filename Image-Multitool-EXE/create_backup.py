@@ -15,7 +15,7 @@ This module can:
 - warn the user if the destination does not have enough free space
 
 Written by AJ Utz on: 8/1/2026
-Last Update: 8/3/2026
+Last Update: 8/17/2026
 """
 
 # This try block checks if tkinter is available for GUI

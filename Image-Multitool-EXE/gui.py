@@ -24,19 +24,24 @@ from gui_helpers import (
 from konami import KonamiEasterEgg
 from options import OptionsWindow, apply_theme, set_dark_mode, set_light_mode
 
-#Description:
-#This is the main GUI application layer that integrates all the tools into a single interface. 
-#It uses Tkinter for the GUI and concurrent.futures for running tasks in background threads while keeping the UI responsive. 
-#Each tool is launched with user-selected options, and progress/status is displayed in the right pane.
+"""
+Description:
+This is the main GUI application layer that integrates all the tools into a single interface. 
+It uses Tkinter for the GUI and concurrent.futures for running tasks in background threads while keeping the UI responsive. 
+Each tool is launched with user-selected options, and progress/status is displayed in the right pane.
 
-#When you want to apply changes to the code. Run this in the terminal to rebuild the application and see the changes:
-# .\.venv\Scripts\python.exe -m PyInstaller multitool.spec
+Make sure you configure a virtual environment before trying to build your own version.
+When you want to apply changes to the code. Run this in the terminal to rebuild the application and see the changes:
+.\.venv\Scripts\python.exe -m PyInstaller multitool.spec
+Or use this one to clean and rebuild the package from scratch:
+.\.venv\Scripts\python.exe -m PyInstaller --clean --noconfirm multitool.spec
 
-#If the EXE is being made from a different location, adjust the path to pyinstaller.exe accordingly. Check out the Readme for more details.
+If the EXE is being made from a different location, adjust the path to pyinstaller.exe accordingly. Check out the Readme for more details.
 
-#Written by: AJ Utz - and a little bit with the Ai Agent
-#Written on: 3/19/2026
-#Last updated: 8/5/2026
+Written by: AJ Utz - and a little bit with the Ai Agent
+Written on: 3/19/2026
+Last updated: 8/18/2026
+"""
 
 class GUI:
     def __init__(self, root):
@@ -77,6 +82,7 @@ class GUI:
             ("List filenames", self.on_list_files, "Requires: A folder to list files from."),
             ("Search & Copy", self.on_search_files, "Requires: A source folder to search, search term or .txt file, and destination folder."),
             ("Image reformat", self.on_image_reformat, "Requires: A folder containing images to reformat."),
+            ("Image optimize", self.on_image_optimize, "Requires: A folder containing images to optimize without changing dimensions or format."),
             ("Excel rename", self.on_rename_excel, "Requires: An Excel file with renaming data and a folder with images."),
             ("TXT <-> Excel Compare", self.on_compare_txt_excel, "Requires: A .txt file, an Excel file (.xlsx or .xls), and a column name."),
             ("Excel image downloader", self.on_download_from_excel, "Requires: An Excel file with image URLs and column names."),
@@ -748,8 +754,6 @@ class GUI:
     def choose_option(self, title, prompt, options, default=None):
         win = tk.Toplevel(self.root)
         win.title(title)
-        win.geometry("400x180")
-        win.resizable(False, False)
 
         selected = tk.StringVar(value=default if default in options else options[0])
 
@@ -763,6 +767,13 @@ class GUI:
         ttk.Button(button_frame, text="OK", command=win.destroy).pack(side="right")
         ttk.Button(button_frame, text="Cancel", command=lambda: selected.set(default if default else options[0])).pack(side="right", padx=(0, 5))
 
+        # Size the dialog after all controls are created so the action buttons remain visible.
+        win.update_idletasks()
+        width = max(400, win.winfo_reqwidth())
+        height = max(150, win.winfo_reqheight())
+        win.geometry(f"{width}x{height}")
+        win.resizable(False, False)
+
         win.grab_set()
         win.wait_window()
 
@@ -774,6 +785,7 @@ class GUI:
             return
         include = ask_yes_no("Include subfolders?", "Include subfolders in count?")
         task_name = f"Counting files in {folder.split(chr(92))[-1]} (subfolders={include})"
+        
         import count_files_by_extension as cfbe
         start_tool_task(self, cfbe.count_files_by_extension, task_name, folder=folder, include_subfolders=include)
 
@@ -793,6 +805,7 @@ class GUI:
             if not txt_file:
                 return
         task_name = f"Listing {exts} files in {folder.split(chr(92))[-1]}"
+
         import list_files_by_extension as lf
         start_tool_task(
             self,
@@ -833,6 +846,7 @@ class GUI:
             parent_dest = select_folder("Select parent folder for copied files") or "."
 
         task_name = f"Searching for {terms} in {folder.split(chr(92))[-1]}"
+
         import search_files as sf
         start_tool_task(
             self,
@@ -902,6 +916,7 @@ class GUI:
         include = messagebox.askyesno("Include subfolders?", "Include subfolders in reformatting?")
         task_name = f"Converting images to {target} in {folder.split(chr(92))[-1]}"
         self.log(f"[STARTING] {task_name}")
+
         import image_reformatting as ir
         self.run_in_thread(
             ir.batch_convert_in_folder,
@@ -916,6 +931,122 @@ class GUI:
             dpi=dpi,
             include=include,
             logger=self.log
+        )
+
+    def on_image_optimize(self):
+        folder = filedialog.askdirectory(title="Select folder with images to optimize")
+        if not folder:
+            return
+
+        methods = ["median_cut", "octree", "none"]
+        method = "median_cut"
+        try:
+            choice = self.choose_option(
+                "Optimization method",
+                "Choose a color reduction method (select 'none' to skip palette reduction):",
+                methods,
+                default="median_cut",
+            )
+            if choice in set(methods):
+                method = choice
+        except Exception:
+            pass
+
+        max_colors = 256
+        if method != "none":
+            try:
+                value = simpledialog.askinteger(
+                    "Maximum colors",
+                    "Enter maximum palette size (2-256):",
+                    initialvalue=max_colors,
+                    minvalue=2,
+                    maxvalue=256,
+                    parent=self.root,
+                )
+                if value is not None:
+                    max_colors = value
+            except Exception:
+                pass
+
+        preserve_alpha = True
+        if method != "none":
+            try:
+                preserve_alpha = messagebox.askyesno(
+                    "Preserve transparency?",
+                    "Keep transparency where possible?",
+                    default="yes",
+                )
+            except Exception:
+                pass
+
+        strip_metadata_enabled = False
+        try:
+            strip_metadata_enabled = messagebox.askyesno(
+                "Strip metadata?",
+                "Remove EXIF/ICC/comment metadata to reduce file size?",
+                default="no",
+            )
+        except Exception:
+            pass
+
+        chroma_options = ["None", "4:4:4", "4:2:2", "4:2:0"]
+        chroma_choice = "None"
+        try:
+            choice = self.choose_option(
+                "JPEG chroma subsampling",
+                "Choose color-detail subsampling for JPEG output (ignored for other formats):",
+                chroma_options,
+                default="None",
+            )
+            if choice in set(chroma_options):
+                chroma_choice = choice
+        except Exception:
+            pass
+        chroma_subsampling = None if chroma_choice == "None" else chroma_choice
+
+        dither_choice = "none"
+        if method != "none":
+            dither_options = ["none", "floyd_steinberg", "ordered"]
+            try:
+                chosen = self.choose_option(
+                    "Dithering",
+                    "Choose a dithering mode for color reduction:",
+                    dither_options,
+                    default="none",
+                )
+                if chosen in set(dither_options):
+                    dither_choice = chosen
+            except Exception:
+                pass
+        use_dither = dither_choice if method != "none" else "none"
+
+        include = True
+        try:
+            include = messagebox.askyesno(
+                "Include subfolders?",
+                "Include subfolders when optimizing?",
+                default="yes",
+            )
+        except Exception:
+            pass
+
+        task_name = f"Optimizing images in {folder.split(chr(92))[-1]}"
+        self.log(f"[STARTING] {task_name}")
+
+        import image_optimization as io
+        self.run_in_thread(
+            io.optimize_folder,
+            task_name=task_name,
+            input_folder=folder,
+            output_folder=None,
+            max_colors=max_colors,
+            method=method,
+            dither=use_dither,
+            preserve_alpha=preserve_alpha,
+            strip_metadata_enabled=strip_metadata_enabled,
+            chroma_subsampling=chroma_subsampling,
+            include_subfolders=include,
+            logger=self.log,
         )
 
     def on_rename_excel(self):
@@ -955,6 +1086,7 @@ class GUI:
         ignore_ext = messagebox.askyesno("File extension matching", "Ignore file extensions when matching names?\n\nYes: Match 'image' to 'image.jpg'\nNo: Include extension in the name (current behavior)")
         task_name = f"Renaming files using {excel.split(chr(92))[-1]}"
         self.log(f"[STARTING] {task_name}")
+
         import rename_wt_excel as rn
         self.run_in_thread(
             rn.rename_from_excel_gui,
@@ -983,6 +1115,7 @@ class GUI:
         save = messagebox.askyesno("Save results", "Save results to matches.txt / not_found.txt?")
         task_name = f"Comparing {txt.split(chr(92))[-1]} with {excel.split(chr(92))[-1]}"
         self.log(f"[STARTING] {task_name}")
+
         import compare_txt_to_excel as cmp
         self.run_in_thread(
             cmp.run_txt_excel_compare_gui,
@@ -1029,6 +1162,7 @@ class GUI:
         try:
             task_name = f"Downloading images from {excel.split(chr(92))[-1]} to {out_folder.split(chr(92))[-1]}"
             self.log(f"[STARTING] {task_name}")
+
             import web_downloading as wd
             self.run_in_thread(
                 wd.download_from_excel,
@@ -1058,6 +1192,7 @@ class GUI:
             out_file = simpledialog.askstring("Output filename", "Enter output filename (e.g. missing_files.txt):", initialvalue="missing_files.txt")
         task_name = f"Comparing {f1.split(chr(92))[-1]} vs {f2.split(chr(92))[-1]}"
         self.log(f"[STARTING] {task_name}")
+
         import folder_compare as fc
         self.run_in_thread(
             fc.run_folder_compare_gui,
@@ -1071,6 +1206,7 @@ class GUI:
         )
 
     def on_backup_files(self):
+
         import create_backup as cb
 
         selected_files = cb.select_backup_sources(parent=self.root)

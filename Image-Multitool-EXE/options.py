@@ -1,10 +1,13 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 
-#This is the Options window. Here we can add Theme switchers, Memory settings, and tool starting options.
+"""
+This is the Options window. Here we can add Theme switchers, Memory settings, and tool starting options.
 
-#written by: AJ Utz on 6/30/2026
-#Last Updated: 7/3/2026
+Written on: 6/30/2026
+Written by: AJ Utz
+Last Updated: 8/17/2026
+"""
 
 def apply_theme(gui, theme):
     if theme == "dark":
@@ -83,7 +86,7 @@ def set_dark_mode(gui):
     gui.current_theme = "dark"
     apply_theme(gui, "dark")
 
-
+# Here the auto-start option is set.
 def set_auto_start(gui, enabled):
     gui.auto_start = bool(enabled)
     if hasattr(gui, "_update_start_queue_button_state"):
