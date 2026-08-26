@@ -65,11 +65,11 @@ Added Crop mode for resizing.
 Added DPI support for screen resolution.
 
 Written on: 12/18/2025
-Last updated: 8/17/2026
+Last updated: 8/20/2026
 Written by: AJ Utz
 """
 
-def convert_image(input_path, output_path, target_ext, compress=False, max_size_kb=100, resize=None, resize_mode="pad", ppi=None, dpi=None, logger=print, progress_callback=None, cancel_event=None):
+def convert_image(input_path, output_path, target_ext, compress=False, max_size_kb=100, resize=None, resize_mode="pad", ppi=None, dpi=None, logger=print, cancel_event=None):
     try:
         input_ext = os.path.splitext(input_path)[1].lower()
         if input_ext in (".heic", ".heif") and not HEIF_SUPPORT_AVAILABLE:
@@ -264,6 +264,11 @@ def run_image_reformatter():
 
 def main():
 
+    input_folder = input("Enter folder path containing images: ").strip()
+    if not input_folder:
+        print("A folder path is required.")
+        return
+
     print("What file type do you want to convert your images to? (jpg, png, webp, tiff, bmp, avif, heic, heif)")
     target_ext = input("Enter file type (without dot): ").lower().strip()
     if not target_ext.startswith("."):
@@ -321,7 +326,10 @@ def main():
         target_ext = "." + target_ext
 
     image_exts = {".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tiff", ".tif", ".webp", ".avif", ".heic", ".heif"}
-    current_folder = os.getcwd()
+    current_folder = os.path.abspath(input_folder)
+    if not os.path.isdir(current_folder):
+        print(f"'{input_folder}' is not a valid folder.")
+        return
     output_folder = os.path.join(current_folder, f"converted_to_{target_ext[1:]}")
     os.makedirs(output_folder, exist_ok=True)
 
@@ -441,7 +449,7 @@ def batch_convert_in_folder(input_folder, target_ext, compress=False, max_size_k
             if cancel_event and cancel_event.is_set():
                 logger("[INFO] Image reformat cancelled.")
                 return
-            name, ext = os.path.splitext(filename)
+            name, _ = os.path.splitext(filename) #Earlier versions had a tuple bug here
             input_path = os.path.join(root, filename)
 
             #If include is True, the output path is constructed to preserve the subfolder structure relative to the source folder.
@@ -465,7 +473,6 @@ def batch_convert_in_folder(input_folder, target_ext, compress=False, max_size_k
                 ppi=ppi,
                 dpi=dpi,
                 logger=logger,
-                progress_callback=None,
                 cancel_event=cancel_event
             )
             processed_files += 1

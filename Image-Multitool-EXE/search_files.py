@@ -11,12 +11,13 @@ Added cancellation support
 
 Written by: AJ Utz
 Written on: 4/8/2026
-Last updated: 8/17/2026
+Last updated: 8/20/2026
 
 Change Log:
 Changed the gui version to allow a .txt file to be used for search terms, and added support for that in the search_files_gui function.
 Optimized the search_files_gui function to support searching multiple root folders in parallel using a thread pool, 
 which can speed up searches across multiple directories.
+Asked for a folder path instead.
 """
 
 def filename_matches_search_term(filename, term):
@@ -64,7 +65,10 @@ def search_files():
 
     #Main search loop
     while True:
-        folder = input("\nFolder to search (leave blank for current): ").strip() or "."
+        folder = input("\nFolder to search: ").strip()
+        if not folder:
+            print("A folder path is required.")
+            continue
         include = input("Include subfolders? (y/n): ").strip().lower()
         include_subfolder = include == "y"
 
@@ -232,11 +236,9 @@ def search_files_gui(folder='.', search_terms=None, txt_file=None, include_subfo
                             continue
                         
                         # Check against each batch of patterns
-                        matched = False
                         for batch in pattern_batches:
                             if _matches_any_pattern(entry.name, batch):
                                 local_matches.append(os.path.join(root, entry.name))
-                                matched = True
                                 break  # File matched, no need to check other batches
                         
                         processed_local += 1

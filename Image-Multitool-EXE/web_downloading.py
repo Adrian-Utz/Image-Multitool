@@ -18,10 +18,11 @@ Added an interactive wrapper to make it easier for users to select columns and o
 Added handling of different types of content (images, videos, PDFs) and assigned appropriate extensions.
 Added documentation and comments for better readability and maintainability.
 Added cancellation support
+Asked for a folder path instead.
 
 Written by AJ Utz on: 2/26/2026 
 Written on: 2/26/2026
-Last Edit: 8/17/2026
+Last Edit: 8/20/2026
 """
 
 def download_from_excel(
@@ -99,7 +100,7 @@ def download_from_excel(
                     try:
                         #This regex safely extracts the first URL in quotes
                         import re
-                        match = re.search(r'"(http[s]?://[^"]+)"', url)
+                        match = re.search(r'"(https?://[^"]+)"', url)
                         if match:
                             url = match.group(1)
                         else:
@@ -278,9 +279,10 @@ def run_excel_image_downloader():
         else:
             rename_column = rename_input
 
-    output_folder = input(
-        "Output folder name (leave blank for 'downloaded_images'): "
-    ).strip() or "downloaded_images"
+    output_folder = input("Enter output folder path: ").strip()
+    if not output_folder:
+        print("An output folder path is required.")
+        return
 
     #Run the downloader with the specified options
     #And handle any exceptions that occur during the download process

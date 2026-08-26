@@ -2,8 +2,8 @@
 
 A comprehensive file management and processing application with a modern, responsive GUI. Convert images, rename files using Excel data, search and copy files, download images from URLs, compare folders, and more—all with real-time progress tracking and background threading.
 
-**Version:** 1.2.9  
-**Last Updated:** August 18, 2026  
+**Version:** 1.3.0  
+**Last Updated:** August 26, 2026  
 **Status:** ✓ Production Ready
 
 ## Features
@@ -78,10 +78,11 @@ All included in `requirements.txt`:
 
 ### Launching the Application
 
-**From Source:**
+**Run From Source:**
 ```bash
 python gui.py
 ```
+
 Or just use a editor like vscode, or python's IDLE.
 
 **From Executable:**
@@ -224,6 +225,7 @@ multitool/
 ├── multitool.spec                    # PyInstaller build config
 ├── README.md                         # This file
 ├── docs/
+│   ├── codeofconduct.md              # Code of conduct
 │   └── changelog.md                  # Documentation of changes
 └── dist/
     └── Multitool.exe                 # Standalone executable (64 MB)

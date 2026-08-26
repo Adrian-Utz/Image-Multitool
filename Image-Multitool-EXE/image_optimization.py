@@ -260,7 +260,6 @@ def optimize_folder(input_folder, output_folder=None, max_colors=256, method="me
         input_path = os.path.join(root, filename)
         #determine the target directory based on folder structure
         if len(folders) == 1 and root == folders[0] and not include_subfolders:
-            rel_path = os.path.basename(input_path)
             target_dir = output_folder
         else:
             rel_root = os.path.relpath(root, os.path.commonpath(folders)) if len(folders) > 1 else os.path.relpath(root, folders[0])

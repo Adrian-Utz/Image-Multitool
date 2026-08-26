@@ -1,14 +1,15 @@
 import os
 
+"""
+This file is used to compare two folders and find the differences between them. It will print out the files that are in one folder but not in the other.
 
-#This file is used to compare two folders and find the differences between them. It will print out the files that are in one folder but not in the other.
+Change Log:
+Added cancellation support.
+Asked the user for a path instead.
 
-#Change Log:
-#Added cancellation support.
-
-#Last Updated: 6/30/2026
-#Written by: AJ Utz
-
+Last Updated: 8/20/2026
+Written by: AJ Utz
+"""
 def get_files_in_folder(folder_path, ignore_extensions):
     """Returns a set of file names in the given folder."""
     if not folder_path:
@@ -45,32 +46,8 @@ def get_files_in_folder(folder_path, ignore_extensions):
         return None
 
 def get_folder_input(folder_number):
-    print(f"Select how to enter Folder {folder_number}:")
-    print("1. Enter folder path manually")
-    print("2. Use current directory (must be in the current directory)")
-
-    choice = input("Enter your choice (1 or 2): ").strip()
-
-    if choice == "2":
-        current_dir = os.getcwd()
-        print(f"\nUsing current directory: {current_dir}")
-
-        available_folders = [f for f in os.listdir(current_dir) if os.path.isdir(os.path.join(current_dir, f))]
-
-        if not available_folders:
-            print("No folders found in the current directory. Please enter a folder path manually.")
-            return None
-        
-        print("\nAvailable folders in the current directory:")
-        for folder in sorted(available_folders):
-            print(f"- {folder}")
-
-        folder_name = input("\nEnter folder name: ").strip()
-        return os.path.join(current_dir, folder_name)
-    
-    else:
-        folder_path = input(f"Enter the path of Folder {folder_number}: ").strip()
-        return folder_path
+    folder_path = input(f"Enter the path of Folder {folder_number}: ").strip()
+    return folder_path or None
 
 
 def run_folder_compare():

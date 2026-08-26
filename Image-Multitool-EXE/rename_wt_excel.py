@@ -16,10 +16,11 @@ Added cancellation support.
 Fixed a potential bug. This line: print(f"Copied: {source_filename} -> {output_path}\{new_filename}") was using a single backslash which could cause issues on some systems. 
 I changed it to this: print(f"Copied: {source_filename} -> {output_path}\\{new_filename}") could be seen as a invalid escape sequence. 
 By using a double backslash, we ensure that it is treated as a literal backslash in the output string, which is important for correctly displaying file paths on Windows systems.
+Asked the user for a path to the file intead.
 
 Written by: AJ Utz
 Written on: 1/14/2026
-Last Edit: 8/17/2026
+Last Edit: 8/20/2026
 """
 
 def sanitize_filename(name):
@@ -40,8 +41,7 @@ def sanitize_filename(name):
 def run_excel_image_sku_tool():
     print("\n===== Excel Image -> SKU Copy Tool =====")
     
-    folder_path = '.'
-    valid_extensions = ('.jpg', '.jpeg')
+    valid_extensions = ('.jpg', '.jpeg', '.webp')
     output_folder = 'renamed_by_sku'
 
     copied_count = 0
@@ -52,11 +52,11 @@ def run_excel_image_sku_tool():
     include_subfolders = input("Include subfolders? (y/n): ").strip().lower() == 'y'
 
     #Ask for Excel file
-    excel_file = input("Enter Excel file name(example: images.xlsx): ").strip()
+    excel_file = input("Enter Excel file path (example: C:\\images.xlsx): ").strip()
 
     #Check if file exists
     if not os.path.exists(excel_file):
-        print(f"File does not exist")
+        print("File does not exist")
         exit()
 
     #Load Excel file
@@ -74,6 +74,11 @@ def run_excel_image_sku_tool():
     #Get column names from user
     image_col = input("\nEnter column name for Image names: ").strip()
     sku_col = input("Enter column name for SKU names: ").strip()
+
+    folder_path = input("Enter folder path containing the files to rename: ").strip()
+    if not folder_path or not os.path.isdir(folder_path):
+        print("A valid source folder path is required.")
+        return
 
     preserve_variants_input = input("Preserve variant suffixes in filenames? (y/n): ").strip().lower()
     preserve_variants = preserve_variants_input == 'y'
@@ -227,7 +232,7 @@ def rename_from_excel_gui(
     
     """Non-interactive wrapper for GUI use. Mirrors the behavior of run_excel_image_sku_tool but accepts parameters."""
     folder_path = folder_path or '.'
-    valid_extensions = ('.jpg', '.jpeg')
+    valid_extensions = ('.jpg', '.jpeg', 'webp')
     output_path = os.path.join(folder_path, output_folder)
     os.makedirs(output_path, exist_ok=True)
 

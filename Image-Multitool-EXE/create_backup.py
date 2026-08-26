@@ -15,7 +15,7 @@ This module can:
 - warn the user if the destination does not have enough free space
 
 Written by AJ Utz on: 8/1/2026
-Last Update: 8/17/2026
+Last Update: 8/20/2026
 """
 
 # This try block checks if tkinter is available for GUI
@@ -426,9 +426,12 @@ def backup_selected_files():
     """
     print("\n===== Backup Tool =====")
 
+    print("Add multiple files and/or folders. Enter one path per prompt.")
+    print("Press Enter without typing a path when finished.")
+
     selected_sources = []
     while True:
-        source_path = input("Enter a file or folder to back up (leave blank to finish): ").strip()
+        source_path = input("Path to back up: ").strip()
         if not source_path:
             break
         selected_sources.append(source_path)
@@ -437,7 +440,10 @@ def backup_selected_files():
         print("No files or folders selected.")
         return
 
-    destination_root = input("Destination folder for the backup (leave blank for current folder): ").strip() or "."
+    destination_root = input("Destination folder for the backup: ").strip()
+    if not destination_root:
+        print("A destination folder path is required.")
+        return
     include_subfolders = input("Include subfolders? (y/n): ").strip().lower() == "y"
     fast_mode = input("Use fast mode? This skips disk checks and metadata (y/n): ").strip().lower() == "y"
     if fast_mode:

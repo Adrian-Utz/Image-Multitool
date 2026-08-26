@@ -24,7 +24,7 @@ from gui_helpers import (
 from konami import KonamiEasterEgg
 from options import OptionsWindow, apply_theme, set_dark_mode, set_light_mode
 
-"""
+r"""
 Description:
 This is the main GUI application layer that integrates all the tools into a single interface. 
 It uses Tkinter for the GUI and concurrent.futures for running tasks in background threads while keeping the UI responsive. 
@@ -400,7 +400,7 @@ class GUI:
                         if self._current_task_name and self._current_task_name in self.active_tasks:
                             self.active_tasks.remove(self._current_task_name)
                         # Remove any pending queued item with same name
-                        for item in list(self.task_queue):
+                        for item in self.task_queue:
                             if isinstance(item, dict) and item.get('task_name') == self._current_task_name:
                                 try:
                                     self.task_queue.remove(item)
@@ -425,7 +425,7 @@ class GUI:
                 if self._current_task_name and self._current_task_name in self.active_tasks:
                     self.active_tasks.remove(self._current_task_name)
                 # Also remove any pending queued items that match the current name
-                for item in list(self.task_queue):
+                for item in self.task_queue:
                     if isinstance(item, dict) and item.get('task_name') == self._current_task_name:
                         try:
                             self.task_queue.remove(item)
@@ -1236,7 +1236,7 @@ class GUI:
 
 def main():
     root = tk.Tk()
-    app = GUI(root)
+    GUI(root)
     root.mainloop()
 
 

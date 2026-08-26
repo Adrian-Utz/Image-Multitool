@@ -32,7 +32,7 @@ Thought about making a GUI for it but I think the command line is fine for now. 
 I coded a basic GUI but it was a pain to get it to work with the progress bars and the output. I will save it for a future update when I have more time to work on it.
 Removed the GUI from this file and created a seperate GUI and EXE file.
 
-Last Update: 8/5/2026
+Last Update: 8/20/2026
 Written on: 12/3/2025
 Written by: AJ Utz
 """
@@ -65,11 +65,19 @@ def main_menu():
             break
 
         elif choice == "1":
-            count_files_by_extension.count_files_by_extension()
+            folder = input("Enter folder path to count: ").strip()
+            if folder:
+                include = input("Include subfolders? (y/n): ").strip().lower() == "y"
+                count_files_by_extension.count_files_by_extension(folder, include_subfolders=include)
             input(RETURN_PROMPT)
 
         elif choice == "2":
-            list_files_by_extension.list_files_by_extension()
+            folder = input("Enter folder path to list files from: ").strip()
+            if folder:
+                extensions = input("Enter extensions (comma separated, e.g. jpg,png) [jpg]: ").strip() or "jpg"
+                extensions = [extension.strip() for extension in extensions.split(",") if extension.strip()]
+                include = input("Include subfolders? (y/n): ").strip().lower() == "y"
+                list_files_by_extension.list_files_by_extension(folder, extensions, include_subfolders=include)
             input(RETURN_PROMPT)
 
         elif choice == "3":
