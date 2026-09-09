@@ -164,8 +164,3 @@ def resource_path(relative_path):
 
 def queue_task():
     return None
-
-def _default_theme():
-    """"Returns the Last used theme or a the default if none is found"""
-
-

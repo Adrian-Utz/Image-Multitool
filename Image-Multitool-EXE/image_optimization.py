@@ -9,7 +9,7 @@ Optimize an existing image without changing its file type or dimensions.
 This module is intentionally scoped to palette reduction, metadata removal, chroma subsampling, dithering, and color optimization.
 Written by: AJ Utz
 Written on: 8/14/2026
-Last Updated: 8/18/2026
+Last Updated: 9/3/2026
 """
 
 
@@ -104,8 +104,8 @@ def apply_quantization(img, max_colors=256, method="median_cut", dither=False, p
 
     """
     Median cut is a clustering algorihm that divides an image into regions based on color distribution. 
-    It works by iterativly selectin and splitting the pixel clusters with the largest inter-cluster variance.
-    this helps reduce the number of colors while maintaining the overall cisual quality of the image.
+    It works by iterativly selecting and splitting the pixel clusters with the largest inter-cluster variance.
+    this helps reduce the number of colors while maintaining the overall visual quality of the image.
     """
     if method == "median_cut":
         base = img.convert("RGB") if has_alpha else img
@@ -118,7 +118,7 @@ def apply_quantization(img, max_colors=256, method="median_cut", dither=False, p
         return quantized
 
     """
-    Octree is another cluseting algorithm that divides an image into a heirarchical tree structure based on pixel intensity.
+    Octree is another clustering algorithm that divides an image into a heirarchical tree structure based on pixel intensity.
     It uses binary splitting to divide each node into 8 smaller subnodes until a certian depth or a specified number of leaves is reached.
     """
     if method == "octree":

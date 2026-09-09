@@ -3,7 +3,7 @@ import re
 import shutil
 import pandas as pd
 
-"""
+r"""
 This program is to make bulk renaming faster. This program should look at the filename, find the cell with matching info, then rename it to the SKU name.
 
 Change Log:

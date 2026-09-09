@@ -1,18 +1,14 @@
 import tkinter as tk
 import concurrent.futures
 import threading
+from tkinter import ttk, filedialog, messagebox
+from collections import deque
 
 import check_for_update
 from version import VERSION
-
-from tkinter import ttk, filedialog, messagebox, simpledialog
-from collections import deque
-
 from gui_helpers import (
     select_folder,
     select_file,
-    ask_yes_no,
-    ask_string,
     parse_size_to_kb,
     load_excel_columns,
     start_tool_task,
@@ -22,7 +18,7 @@ from gui_helpers import (
     resource_path,
 )
 from konami import KonamiEasterEgg
-from options import OptionsWindow, apply_theme, set_dark_mode, set_light_mode
+from options import OptionsWindow, apply_theme, set_theme, load_saved_theme, load_saved_auto_start
 
 r"""
 Description:
@@ -40,7 +36,7 @@ If the EXE is being made from a different location, adjust the path to pyinstall
 
 Written by: AJ Utz - and a little bit with the Ai Agent
 Written on: 3/19/2026
-Last updated: 8/18/2026
+Last updated: 9/3/2026
 """
 
 class GUI:
@@ -62,7 +58,7 @@ class GUI:
         self.total_progress = 0
         self.completed_tasks = 0
         self.total_tasks_started = 0
-        self.auto_start = True
+        self.auto_start = load_saved_auto_start()
 
         # Configure grid
         root.columnconfigure(0, weight=0)
@@ -137,7 +133,7 @@ class GUI:
 
         # Resizable paned window for task queue and log
         paned_window = tk.PanedWindow(right, orient="vertical", sashwidth=5, bg="gray")
-        paned_window.grid(row=1, column=0, sticky="nsew", pady=(8, 0))
+        paned_window.grid(row=1, column=0, sticky="nsew", pady=(10, 0))
         self.paned_window = paned_window
 
         # Task queue display
@@ -170,15 +166,25 @@ class GUI:
         scrollbar.grid(row=0, column=1, sticky="ns")
         self.log_text.config(yscrollcommand=scrollbar.set)
 
+        # Text widgets normally swallow Tab as a literal character instead of moving
+        # focus, which traps keyboard users here. Redirect Tab/Shift-Tab to focus
+        # traversal while leaving normal typing untouched.
+        self.log_text.bind("<Tab>", lambda e: (e.widget.tk_focusNext().focus_set(), "break")[1])
+        self.log_text.bind("<Shift-Tab>", lambda e: (e.widget.tk_focusPrev().focus_set(), "break")[1])
+
         # Add log frame to paned window
         paned_window.add(log_frame, height=200)
 
-        # Initialize theme
+        # Initialize theme (restores the last-used theme from disk)
         self.style = ttk.Style(self.root)
         self.current_theme = "light"
-        self._set_light_mode()
+        set_theme(self, load_saved_theme())
         self._update_start_queue_button_state()
         self._update_status_idle()
+
+        # ttk buttons only invoke on <space> by default; make <Return> do the same
+        # for every ttk.Button app-wide (main window and popups alike).
+        self.root.bind_class("TButton", "<Return>", lambda e: e.widget.invoke())
 
         # Schedule a background update check (non-forced) so the GUI can notify the user
         try:
@@ -264,7 +270,7 @@ class GUI:
 
             self.log(f"Local version: {local or '(unknown)'}; Latest: {latest}")
             if available:
-                open_now = messagebox.askyesno("Update available", f"A new version ({latest}) is available. Open releases page?")
+                open_now = self.ask_yes_no("Update available", f"A new version ({latest}) is available. Open releases page?")
                 if open_now:
                     try:
                         if not check_for_update.open_releases_page():
@@ -281,14 +287,6 @@ class GUI:
         except Exception:
             # best-effort: just call it
             _notify()
-
-    def _set_light_mode(self):
-        """Switch the interface to light theme."""
-        set_light_mode(self)
-
-    def _set_dark_mode(self):
-        """Switch the interface to dark theme."""
-        set_dark_mode(self)
 
     def _apply_theme(self, theme):
         apply_theme(self, theme)
@@ -315,7 +313,6 @@ class GUI:
             self._process_queue()
             self._update_start_queue_button_state()
 
-    # Helper method to safely call Tkinter operations from any thread
     def _safe_after(self, delay, func, *args):
         """Safely schedule a Tkinter operation from any thread."""
         try:
@@ -324,8 +321,8 @@ class GUI:
             # Main thread is not in main loop, silently skip
             pass
 
-    # Thread-safe logging method to append messages to the log text widget
     def log(self, message):
+        """Thread-safe logging method to append messages to the log text widget"""
         if not message:
             return
 
@@ -343,9 +340,8 @@ class GUI:
                 pass
         self._safe_after(0, _append)
 
-    # Update the task queue display with current active and pending tasks
     def _update_queue_display(self):
-        """Update the task queue display"""
+        """Update the task queue display with current active and pending tasks"""
         def _update():
             self.queue_text.config(state="normal")
             self.queue_text.delete(1.0, tk.END)
@@ -388,10 +384,10 @@ class GUI:
         self._update_start_queue_button_state()
 
     def _cancel_current_task(self):
-        """Cancel the currently running task."""
-        # If there's a future for the current task, try to cancel it. Most
-        # tasks are only submitted when running, so cancellation here often
-        # won't succeed; we also treat queued (pending) items separately.
+        """Cancel the currently running task.
+        If there's a future for the current task, try to cancel it. Most
+        tasks are only submitted when running, so cancellation here often
+        won't succeed; we also treat queued (pending) items separately."""
         if self._current_task_future:
             try:
                 if self._current_task_future.cancel():
@@ -463,7 +459,6 @@ class GUI:
         
         self._update_queue_display()
 
-    # Helper method to update progress bar with percentage
     def _update_progress(self, percentage=None):
         """Update progress bar with a percentage value (0-100)."""
         try:
@@ -473,7 +468,6 @@ class GUI:
         except Exception:
             pass
 
-    # Helper method for tasks to report their individual progress
     def _report_task_progress(self, task_name, percentage):
         """Allow running tasks to report their progress (0-100)"""
         try:
@@ -484,11 +478,10 @@ class GUI:
         except Exception:
             pass
 
-    # Used to update the GUI while a task is running in the background.
     def run_in_thread(self, func, task_name="Task", *args, **kwargs):
         """
-        Enqueue a task to run in background threads but ensure only one task
-        runs at a time. Tasks are executed in the order they were enqueued.
+        Used to update the GUI while a task is running in the background.
+        Enqueue a task to run in background threads but ensure only one task runs at a time. Tasks are executed in the order they were enqueued.
         """
         # Wrap task data into a dict stored in the deque so we can keep
         # structured info about pending tasks.
@@ -600,11 +593,39 @@ class GUI:
         self._update_queue_display()
         self._update_start_queue_button_state()
 
+    def _center_window(self, win):
+        """Position a Toplevel window centered over the main application window."""
+        win.update_idletasks()
+        width = win.winfo_width() or win.winfo_reqwidth()
+        height = win.winfo_height() or win.winfo_reqheight()
+        parent_x = self.root.winfo_rootx()
+        parent_y = self.root.winfo_rooty()
+        parent_w = self.root.winfo_width()
+        parent_h = self.root.winfo_height()
+        x = parent_x + max((parent_w - width) // 2, 0)
+        y = parent_y + max((parent_h - height) // 2, 0)
+        win.geometry(f"{width}x{height}+{x}+{y}")
+
+    def _bind_lr_toggle(self, widgets):
+        """Let Left/Right arrows cycle focus across a row of buttons (e.g. OK/Cancel)."""
+        def handler(event):
+            try:
+                idx = widgets.index(event.widget)
+            except ValueError:
+                idx = 0
+            direction = 1 if event.keysym == "Right" else -1
+            widgets[(idx + direction) % len(widgets)].focus_set()
+            return "break"
+        for w in widgets:
+            w.bind("<Left>", handler)
+            w.bind("<Right>", handler)
+
     # This method creates a new window with a scrollable list of columns from an Excel file, allowing the user to select one.
     def choose_column(self, title, columns):
         win = tk.Toplevel(self.root)
         win.title(title)
         win.geometry("500x600")
+        self._center_window(win)
 
         selected = {"value": None}
 
@@ -656,8 +677,28 @@ class GUI:
                 win.destroy()
 
         listbox.bind("<Double-1>", on_select)
+        listbox.bind("<Return>", on_select)
+
+        def _cancel(event=None):
+            selected["value"] = None
+            win.destroy()
+
+        def _focus_listbox(event=None):
+            if listbox.size() > 0:
+                listbox.focus_set()
+                if not listbox.curselection():
+                    listbox.selection_set(0)
+                    listbox.activate(0)
+            return "break"
+
+        win.bind("<Escape>", _cancel)
+        search_entry.bind("<Return>", _focus_listbox)
+        search_entry.bind("<Down>", _focus_listbox)
+        search_entry.focus_set()
 
         # Wait for selection
+        win.lift()
+        win.focus_force()
         win.grab_set()
         win.wait_window()
 
@@ -668,6 +709,7 @@ class GUI:
         win = tk.Toplevel(self.root)
         win.title(title)
         win.geometry("600x700")
+        self._center_window(win)
 
         selected = {"values": []}
 
@@ -742,30 +784,105 @@ class GUI:
             selected["values"] = []
             win.destroy()
 
-        ttk.Button(button_frame, text="OK", command=on_apply).pack(side="right", padx=2)
-        ttk.Button(button_frame, text="Cancel", command=on_cancel).pack(side="right", padx=2)
+        ok_btn = ttk.Button(button_frame, text="OK", command=on_apply)
+        cancel_btn = ttk.Button(button_frame, text="Cancel", command=on_cancel)
+        ok_btn.pack(side="right", padx=2)
+        cancel_btn.pack(side="right", padx=2)
+
+        def _focus_listbox(event=None):
+            if listbox.size() > 0:
+                listbox.focus_set()
+                if not listbox.curselection():
+                    listbox.selection_set(0)
+                    listbox.activate(0)
+            return "break"
+
+        def _toggle_active(event=None):
+            active = listbox.index("active")
+            if active in listbox.curselection():
+                listbox.selection_clear(active)
+            else:
+                listbox.selection_set(active)
+            return "break"
+
+        # Multi-select listboxes don't select-on-arrow like single-select ones, so
+        # arrow keys just move the active item and <space> toggles it on/off.
+        listbox.bind("<space>", _toggle_active)
+        listbox.bind("<Return>", lambda e: on_apply())
+
+        # <Return> on OK/Cancel is handled by the app-wide TButton class binding.
+        self._bind_lr_toggle([ok_btn, cancel_btn])
+
+        win.bind("<Escape>", lambda e: on_cancel())
+        search_entry.bind("<Return>", _focus_listbox)
+        search_entry.bind("<Down>", _focus_listbox)
+        range_entry.bind("<Return>", lambda e: on_apply())
+        search_entry.focus_set()
 
         # Wait for selection
+        win.lift()
+        win.focus_force()
         win.grab_set()
         win.wait_window()
 
         return selected["values"]
 
     def choose_option(self, title, prompt, options, default=None):
+        """Custom option selection box."""
         win = tk.Toplevel(self.root)
         win.title(title)
+        win.configure(bg=self.style.lookup("TFrame", "background"))
 
         selected = tk.StringVar(value=default if default in options else options[0])
 
         ttk.Label(win, text=prompt, wraplength=380).pack(fill="x", padx=10, pady=(10, 5))
 
+        radio_buttons = []
         for option in options:
-            ttk.Radiobutton(win, text=option.capitalize(), variable=selected, value=option).pack(anchor="w", padx=20, pady=2)
+            rb = ttk.Radiobutton(win, text=option.capitalize(), variable=selected, value=option)
+            rb.pack(anchor="w", padx=20, pady=2)
+            radio_buttons.append(rb)
+
+        def _cancel():
+            selected.set(default if default else options[0])
+            win.destroy()
 
         button_frame = ttk.Frame(win)
         button_frame.pack(fill="x", pady=10, padx=10)
-        ttk.Button(button_frame, text="OK", command=win.destroy).pack(side="right")
-        ttk.Button(button_frame, text="Cancel", command=lambda: selected.set(default if default else options[0])).pack(side="right", padx=(0, 5))
+        ok_btn = ttk.Button(button_frame, text="OK", command=win.destroy)
+        cancel_btn = ttk.Button(button_frame, text="Cancel", command=_cancel)
+        ok_btn.pack(side="right")
+        cancel_btn.pack(side="right", padx=(0, 5))
+
+        # Arrow keys move focus/selection between radio options like a native radio group.
+        def _move_focus(delta):
+            def handler(event):
+                try:
+                    idx = radio_buttons.index(event.widget)
+                except ValueError:
+                    idx = 0
+                next_widget = radio_buttons[(idx + delta) % len(radio_buttons)]
+                next_widget.focus_set()
+                next_widget.invoke()
+                return "break"
+            return handler
+
+        for rb in radio_buttons:
+            rb.bind("<Down>", _move_focus(1))
+            rb.bind("<Right>", _move_focus(1))
+            rb.bind("<Up>", _move_focus(-1))
+            rb.bind("<Left>", _move_focus(-1))
+            rb.bind("<Return>", lambda e: win.destroy())
+
+        # Bind Return on each button directly so whichever one has focus is the
+        # one that actually fires (previously Enter always triggered OK, even
+        # when Cancel was the focused button).
+        # <Return> on OK/Cancel is handled by the app-wide TButton class binding.
+        self._bind_lr_toggle([ok_btn, cancel_btn])
+
+        win.bind("<Escape>", lambda e: _cancel())
+        # Fallback default (e.g. if focus is on the window itself): treat Enter as OK.
+        win.bind("<Return>", lambda e: win.destroy())
 
         # Size the dialog after all controls are created so the action buttons remain visible.
         win.update_idletasks()
@@ -773,17 +890,188 @@ class GUI:
         height = max(150, win.winfo_reqheight())
         win.geometry(f"{width}x{height}")
         win.resizable(False, False)
+        self._center_window(win)
 
+        win.lift()
+        win.focus_force()
         win.grab_set()
+        # Must run after focus_force(), otherwise the toplevel steals focus back
+        # from the radio button and the focus ring/keyboard nav never engages.
+        for rb in radio_buttons:
+            if rb.cget("value") == selected.get():
+                rb.focus_set()
+                break
         win.wait_window()
 
         return selected.get()
+
+    def ask_yes_no(self, title, message, default="yes"):
+        """Themed replacement for messagebox.askyesno so the dialog follows the active theme."""
+        win = tk.Toplevel(self.root)
+        win.title(title)
+        win.configure(bg=self.style.lookup("TFrame", "background"))
+        win.resizable(False, False)
+        win.transient(self.root)
+
+        result = {"value": default == "yes"}
+
+        ttk.Label(win, text=message, wraplength=360, justify="left").pack(fill="x", padx=15, pady=(15, 10))
+
+        def _choose(value):
+            result["value"] = value
+            win.destroy()
+
+        button_frame = ttk.Frame(win)
+        button_frame.pack(fill="x", padx=10, pady=(0, 10))
+        yes_btn = ttk.Button(button_frame, text="Yes", command=lambda: _choose(True))
+        no_btn = ttk.Button(button_frame, text="No", command=lambda: _choose(False))
+        if default == "yes":
+            yes_btn.pack(side="right")
+            no_btn.pack(side="right", padx=(0, 5))
+        else:
+            no_btn.pack(side="right")
+            yes_btn.pack(side="right", padx=(0, 5))
+
+        # <Return> on Yes/No is handled by the app-wide TButton class binding.
+        buttons = (yes_btn, no_btn)
+        self._bind_lr_toggle(list(buttons))
+
+        win.protocol("WM_DELETE_WINDOW", lambda: _choose(False))
+        win.bind("<Escape>", lambda e: _choose(False))
+        win.update_idletasks()
+        width = max(320, win.winfo_reqwidth())
+        height = max(120, win.winfo_reqheight())
+        win.geometry(f"{width}x{height}")
+        self._center_window(win)
+
+        win.lift()
+        win.focus_force()
+        win.grab_set()
+        # Must run after focus_force(), otherwise the toplevel steals focus back
+        # from the button and the focus ring/keyboard nav never actually engages.
+        (yes_btn if default == "yes" else no_btn).focus_set()
+        win.wait_window()
+        return result["value"]
+
+
+    def ask_string(self, title, prompt, initial=""):
+        """Themed replacement for simpledialog.askstring so the dialog follows the active theme."""
+        win = tk.Toplevel(self.root)
+        win.title(title)
+        win.configure(bg=self.style.lookup("TFrame", "background"))
+        win.resizable(False, False)
+        win.transient(self.root)
+
+        result = {"value": None}
+
+        ttk.Label(win, text=prompt, wraplength=360, justify="left").pack(fill="x", padx=15, pady=(15, 5))
+        entry_var = tk.StringVar(value=initial)
+        entry = ttk.Entry(win, textvariable=entry_var, width=40)
+        entry.pack(fill="x", padx=15, pady=(0, 10))
+        entry.focus_set()
+        entry.icursor(tk.END)
+
+        def _ok(event=None):
+            result["value"] = entry_var.get()
+            win.destroy()
+
+        def _cancel():
+            result["value"] = None
+            win.destroy()
+
+        button_frame = ttk.Frame(win)
+        button_frame.pack(fill="x", padx=10, pady=(0, 10))
+        ok_btn = ttk.Button(button_frame, text="OK", command=_ok)
+        cancel_btn = ttk.Button(button_frame, text="Cancel", command=_cancel)
+        ok_btn.pack(side="right")
+        cancel_btn.pack(side="right", padx=(0, 5))
+
+        entry.bind("<Return>", _ok)
+        # <Return> on OK/Cancel is handled by the app-wide TButton class binding.
+        self._bind_lr_toggle([ok_btn, cancel_btn])
+        win.protocol("WM_DELETE_WINDOW", _cancel)
+        win.bind("<Escape>", lambda e: _cancel())
+        win.update_idletasks()
+        width = max(320, win.winfo_reqwidth())
+        height = max(120, win.winfo_reqheight())
+        win.geometry(f"{width}x{height}")
+        self._center_window(win)
+
+        win.lift()
+        win.focus_force()
+        win.grab_set()
+        win.wait_window()
+        return result["value"]
+
+    def ask_integer(self, title, prompt, initial=None, minvalue=None, maxvalue=None):
+        """Themed replacement for simpledialog.askinteger so the dialog follows the active theme."""
+        win = tk.Toplevel(self.root)
+        win.title(title)
+        win.configure(bg=self.style.lookup("TFrame", "background"))
+        win.resizable(False, False)
+        win.transient(self.root)
+
+        result = {"value": None}
+
+        ttk.Label(win, text=prompt, wraplength=360, justify="left").pack(fill="x", padx=15, pady=(15, 5))
+        entry_var = tk.StringVar(value="" if initial is None else str(initial))
+        entry = ttk.Entry(win, textvariable=entry_var, width=20)
+        entry.pack(fill="x", padx=15, pady=(0, 5))
+        entry.focus_set()
+        entry.icursor(tk.END)
+
+        error_label = ttk.Label(win, text="", foreground="red")
+        error_label.pack(fill="x", padx=15)
+
+        def _ok(event=None):
+            raw = entry_var.get().strip()
+            try:
+                value = int(raw)
+            except ValueError:
+                error_label.config(text="Please enter a whole number.")
+                return
+            if minvalue is not None and value < minvalue:
+                error_label.config(text=f"Value must be at least {minvalue}.")
+                return
+            if maxvalue is not None and value > maxvalue:
+                error_label.config(text=f"Value must be at most {maxvalue}.")
+                return
+            result["value"] = value
+            win.destroy()
+
+        def _cancel():
+            result["value"] = None
+            win.destroy()
+
+        button_frame = ttk.Frame(win)
+        button_frame.pack(fill="x", padx=10, pady=(5, 10))
+        ok_btn = ttk.Button(button_frame, text="OK", command=_ok)
+        cancel_btn = ttk.Button(button_frame, text="Cancel", command=_cancel)
+        ok_btn.pack(side="right")
+        cancel_btn.pack(side="right", padx=(0, 5))
+
+        entry.bind("<Return>", _ok)
+        # <Return> on OK/Cancel is handled by the app-wide TButton class binding.
+        self._bind_lr_toggle([ok_btn, cancel_btn])
+        win.protocol("WM_DELETE_WINDOW", _cancel)
+        win.bind("<Escape>", lambda e: _cancel())
+        win.update_idletasks()
+        width = max(320, win.winfo_reqwidth())
+        height = max(140, win.winfo_reqheight())
+        win.geometry(f"{width}x{height}")
+        self._center_window(win)
+
+        win.lift()
+        win.focus_force()
+        win.grab_set()
+        win.wait_window()
+        return result["value"]
 
     def on_count_files(self):
         folder = select_folder("Select folder to count files")
         if not folder:
             return
-        include = ask_yes_no("Include subfolders?", "Include subfolders in count?")
+        include = self.ask_yes_no("Include subfolders?", "Include subfolders in count?")
         task_name = f"Counting files in {folder.split(chr(92))[-1]} (subfolders={include})"
         
         import count_files_by_extension as cfbe
@@ -793,15 +1081,15 @@ class GUI:
         folder = select_folder("Select folder to list files")
         if not folder:
             return
-        exts = ask_string("Extensions", "Enter extensions (comma separated, e.g. jpg,png):", initial="jpg")
+        exts = self.ask_string("Extensions", "Enter extensions (comma separated, e.g. jpg,png):", initial="jpg")
         if exts is None:
             return
         exts = [e.strip() for e in exts.split(",") if e.strip()]
-        include = ask_yes_no("Include subfolders?", "Include subfolders?")
-        save = ask_yes_no("Save to txt?", "Save results to a .txt file?")
+        include = self.ask_yes_no("Include subfolders?", "Include subfolders?")
+        save = self.ask_yes_no("Save to txt?", "Save results to a .txt file?")
         txt_file = None
         if save:
-            txt_file = ask_string("Output filename", "Enter output filename (e.g. files.txt):", initial="files.txt")
+            txt_file = self.ask_string("Output filename", "Enter output filename (e.g. files.txt):", initial="files.txt")
             if not txt_file:
                 return
         task_name = f"Listing {exts} files in {folder.split(chr(92))[-1]}"
@@ -823,7 +1111,7 @@ class GUI:
         if not folder:
             return
 
-        use_txt = ask_yes_no("Search input", "Load search terms from a .txt file?")
+        use_txt = self.ask_yes_no("Search input", "Load search terms from a .txt file?")
 
         terms = None
         txt_file = None
@@ -834,13 +1122,13 @@ class GUI:
             if not txt_file:
                 return
         else:
-            raw = ask_string("Search terms", "Enter search terms (comma or space separated):")
+            raw = self.ask_string("Search terms", "Enter search terms (comma or space separated):")
             if not raw:
                 return
             terms = [t.strip().lower() for part in raw.split(",") for t in part.split() if t.strip()]
 
-        include = ask_yes_no("Include subfolders?", "Include subfolders?")
-        do_copy = ask_yes_no("Copy results", "Copy matched files to a new folder?")
+        include = self.ask_yes_no("Include subfolders?", "Include subfolders?")
+        do_copy = self.ask_yes_no("Copy results", "Copy matched files to a new folder?")
         parent_dest = "."
         if do_copy:
             parent_dest = select_folder("Select parent folder for copied files") or "."
@@ -860,24 +1148,23 @@ class GUI:
             parent_dest=parent_dest,
         )
 
-
     def on_image_reformat(self):
         folder = filedialog.askdirectory(title="Select folder with images")
         if not folder:
             return
-        target = simpledialog.askstring("Target extension", "Enter desired extension (e.g. jpg):", initialvalue="jpg")
+        target = self.ask_string("Target extension", "Enter desired extension (e.g. jpg):", initial="jpg")
 
         if not target:
             return
         if not target.startswith('.'):
             target = '.' + target
 
-        compress = messagebox.askyesno("Compress", "Attempt to compress images to a target size?")
+        compress = self.ask_yes_no("Compress", "Attempt to compress images to a target size?")
         kb_limit = 100
 
         #Allow the user to specify a target file size for compression, with support for both KB and MB inputs.
         if compress:
-            kb_limit_input = simpledialog.askstring("Size limit", "Enter maximum file size (e.g., 100KB or 1MB):", initialvalue="100KB")
+            kb_limit_input = self.ask_string("Size limit", "Enter maximum file size (e.g., 100KB or 1MB):", initial="100KB")
             if kb_limit_input:
                 parse_result = parse_size_to_kb(kb_limit_input, default_kb=100)
                 if parse_result is not None:
@@ -885,8 +1172,8 @@ class GUI:
 
         resize = None
         resize_mode = "pad"
-        if messagebox.askyesno("Resize", "Resize images to specific dimensions?"):
-            dims = simpledialog.askstring("Dimensions", "Enter WIDTHxHEIGHT (e.g. 1200x1200):", initialvalue="1200x1200")
+        if self.ask_yes_no("Resize", "Resize images to specific dimensions?"):
+            dims = self.ask_string("Dimensions", "Enter WIDTHxHEIGHT (e.g. 1200x1200):", initial="1200x1200")
             resize = parse_dimensions(dims)
             if resize:
                 resize_mode = self.choose_option(
@@ -900,20 +1187,20 @@ class GUI:
                     resize_mode = "pad"
         
         ppi = None
-        if messagebox.askyesno("Set PPI", "Set custom PPI (print resolution)?"):
+        if self.ask_yes_no("Set PPI", "Set custom PPI (print resolution)?"):
             try:
-                ppi = int(simpledialog.askstring("PPI", "Enter PPI (e.g. 72):", initialvalue="72"))
+                ppi = int(self.ask_string("PPI", "Enter PPI (e.g. 72):", initial="72"))
             except Exception:
                 ppi = None
 
         dpi = None
-        if messagebox.askyesno("Set DPI", "Set custom DPI (screen resolution)?"):
+        if self.ask_yes_no("Set DPI", "Set custom DPI (screen resolution)?"):
             try:
-                dpi = int(simpledialog.askstring("DPI", "Enter DPI (e.g. 72):", initialvalue="72"))
+                dpi = int(self.ask_string("DPI", "Enter DPI (e.g. 72):", initial="72"))
             except Exception:
                 dpi = None
 
-        include = messagebox.askyesno("Include subfolders?", "Include subfolders in reformatting?")
+        include = self.ask_yes_no("Include subfolders?", "Include subfolders in reformatting?")
         task_name = f"Converting images to {target} in {folder.split(chr(92))[-1]}"
         self.log(f"[STARTING] {task_name}")
 
@@ -955,13 +1242,12 @@ class GUI:
         max_colors = 256
         if method != "none":
             try:
-                value = simpledialog.askinteger(
+                value = self.ask_integer(
                     "Maximum colors",
                     "Enter maximum palette size (2-256):",
-                    initialvalue=max_colors,
+                    initial=max_colors,
                     minvalue=2,
                     maxvalue=256,
-                    parent=self.root,
                 )
                 if value is not None:
                     max_colors = value
@@ -971,7 +1257,7 @@ class GUI:
         preserve_alpha = True
         if method != "none":
             try:
-                preserve_alpha = messagebox.askyesno(
+                preserve_alpha = self.ask_yes_no(
                     "Preserve transparency?",
                     "Keep transparency where possible?",
                     default="yes",
@@ -981,7 +1267,7 @@ class GUI:
 
         strip_metadata_enabled = False
         try:
-            strip_metadata_enabled = messagebox.askyesno(
+            strip_metadata_enabled = self.ask_yes_no(
                 "Strip metadata?",
                 "Remove EXIF/ICC/comment metadata to reduce file size?",
                 default="no",
@@ -1022,7 +1308,7 @@ class GUI:
 
         include = True
         try:
-            include = messagebox.askyesno(
+            include = self.ask_yes_no(
                 "Include subfolders?",
                 "Include subfolders when optimizing?",
                 default="yes",
@@ -1081,9 +1367,9 @@ class GUI:
         if not folder:
             return
         
-        include = messagebox.askyesno("Include subfolders?", "Include subfolders in renaming?")
-        preserve = messagebox.askyesno("Preserve variants", "Preserve variant suffixes in filenames?")
-        ignore_ext = messagebox.askyesno("File extension matching", "Ignore file extensions when matching names?\n\nYes: Match 'image' to 'image.jpg'\nNo: Include extension in the name (current behavior)")
+        include = self.ask_yes_no("Include subfolders?", "Include subfolders in renaming?")
+        preserve = self.ask_yes_no("Preserve variants", "Preserve variant suffixes in filenames?")
+        ignore_ext = self.ask_yes_no("File extension matching", "Ignore file extensions when matching names?\n\nYes: Match 'image' to 'image.jpg'\nNo: Include extension in the name (current behavior)")
         task_name = f"Renaming files using {excel.split(chr(92))[-1]}"
         self.log(f"[STARTING] {task_name}")
 
@@ -1109,10 +1395,10 @@ class GUI:
         excel = filedialog.askopenfilename(title="Select Excel file", filetypes=[("Excel files","*.xlsx;*.xls")])
         if not excel:
             return
-        col = simpledialog.askstring("Column", "Enter Excel column name to compare against:")
+        col = self.ask_string("Column", "Enter Excel column name to compare against:")
         if not col:
             return
-        save = messagebox.askyesno("Save results", "Save results to matches.txt / not_found.txt?")
+        save = self.ask_yes_no("Save results", "Save results to matches.txt / not_found.txt?")
         task_name = f"Comparing {txt.split(chr(92))[-1]} with {excel.split(chr(92))[-1]}"
         self.log(f"[STARTING] {task_name}")
 
@@ -1147,7 +1433,7 @@ class GUI:
             return
         
         # Ask about renaming
-        rename_choice = messagebox.askyesno("Rename", "Rename images using a column?")
+        rename_choice = self.ask_yes_no("Rename", "Rename images using a column?")
         rename_col = None
         if rename_choice:
             rename_col = self.choose_column("Select Rename Column", columns)
@@ -1185,11 +1471,11 @@ class GUI:
         f2 = filedialog.askdirectory(title="Select second folder")
         if not f2:
             return
-        ignore = messagebox.askyesno("Ignore extensions?", "Compare ignoring file extensions?")
-        save = messagebox.askyesno("Save results", "Save results to a file?")
+        ignore = self.ask_yes_no("Ignore extensions?", "Compare ignoring file extensions?")
+        save = self.ask_yes_no("Save results", "Save results to a file?")
         out_file = None
         if save:
-            out_file = simpledialog.askstring("Output filename", "Enter output filename (e.g. missing_files.txt):", initialvalue="missing_files.txt")
+            out_file = self.ask_string("Output filename", "Enter output filename (e.g. missing_files.txt):", initial="missing_files.txt")
         task_name = f"Comparing {f1.split(chr(92))[-1]} vs {f2.split(chr(92))[-1]}"
         self.log(f"[STARTING] {task_name}")
 
@@ -1238,7 +1524,6 @@ def main():
     root = tk.Tk()
     GUI(root)
     root.mainloop()
-
 
 if __name__ == "__main__":
     main()

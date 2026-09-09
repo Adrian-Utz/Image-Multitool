@@ -2,8 +2,8 @@
 
 A comprehensive file management and processing application with a modern, responsive GUI. Convert images, rename files using Excel data, search and copy files, download images from URLs, compare folders, and more—all with real-time progress tracking and background threading.
 
-**Version:** 1.3.0  
-**Last Updated:** August 26, 2026  
+**Version:** 1.3.1  
+**Last Updated:** September 4, 2026  
 **Status:** ✓ Production Ready
 
 ## Features
@@ -33,7 +33,7 @@ A comprehensive file management and processing application with a modern, respon
 
 ## Installation
 
-### Option 1: Run from Source (Requires Python)
+### Option 1: Run from Source Code (Requires Python)
 
 #### Prerequisites
 - Python 3.8 or later
@@ -48,6 +48,11 @@ A comprehensive file management and processing application with a modern, respon
 2. **Run the GUI:**
    ```bash
    python gui.py
+   ```
+
+3. **Run the CLI (If you want to run the program fom the command line)**
+   ```bash
+   python multitool.py
    ```
 
 ### Option 2: Use Standalone Executable (Recommended)
@@ -276,9 +281,6 @@ python -u gui.py
 - Try with 1-2 test URLs first
 - Check firewall rules
 
-
-## Troubleshooting
-
 ### "Module not found" errors
 ```bash
 pip install -r requirements.txt
@@ -303,7 +305,7 @@ pip install --upgrade Pillow
 Currently, the GUI requires interactive dialogs. For automation, modify `gui.py` or create custom wrapper scripts using the individual tool modules.
 
 ### Custom Integration
-Each tool module is independently importable:
+Each tool module should be independently importable:
 ```python
 from count_files_by_extension import count_files_by_extension
 

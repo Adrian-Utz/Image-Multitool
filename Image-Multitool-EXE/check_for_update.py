@@ -21,14 +21,14 @@ Behavior:
 
 Written by AJ Utz
 Written on: 8/3/2026
-Last Updated: 8/17/2026
+Last Updated: 9/2/2026
 """
 
 OWNER = "Adrian-Utz"
 REPO = "Image-Multitool"
 
-# File used to store last-check timestamp
-SETTINGS_FILE = os.path.join(os.path.expanduser("~"), ".multitool_update_check.json")
+# File used to store last-check timestamp (shared with options.py's other saved settings)
+SETTINGS_FILE = os.path.join(os.path.expanduser("~"), ".multitool_settings.json")
 
 
 def get_repo_url():
