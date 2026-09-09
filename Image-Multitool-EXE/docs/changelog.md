@@ -2,7 +2,7 @@
 - Program tends to crash if you try to quit a task while it is running.(Should be fixed now ✓ )
 - Program crashes when you select more than one task.(Should be fixed now ✓ )
 - Progress bar bugs out when trying to complete more than one task.(Should be fixed now ✓ )
-- Dark mode inconsistancies.
+- Dark mode inconsistencies.(Should be fixed now ✓ )
 - Search and Copy: If using a TXT file the task queue will show "Searching for None in "(Should be fixed now ✓ )
 
 # Changelog:
