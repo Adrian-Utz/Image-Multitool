@@ -28,9 +28,9 @@ Each tool is launched with user-selected options, and progress/status is display
 
 Make sure you configure a virtual environment before trying to build your own version.
 When you want to apply changes to the code. Run this in the terminal to rebuild the application and see the changes:
-.\.venv\Scripts\python.exe -m PyInstaller multitool.spec
+.\Image-Multitool-EXE\.venv\Scripts\python.exe -m PyInstaller .\Image-Multitool-exe\multitool.spec
 Or use this one to clean and rebuild the package from scratch:
-.\.venv\Scripts\python.exe -m PyInstaller --clean --noconfirm multitool.spec
+.\Image-Multitool-EXE\.venv\Scripts\python.exe -m PyInstaller --clean --noconfirm .\Image-Multitool-exe\multitool.spec
 
 If the EXE is being made from a different location, adjust the path to pyinstaller.exe accordingly. Check out the Readme for more details.
 
