@@ -3,7 +3,7 @@
 A comprehensive file management and processing application with a modern, responsive GUI. Convert images, rename files using Excel data, search and copy files, download images from URLs, compare folders, and more—all with real-time progress tracking and background threading.
 
 **Version:** 1.3.2  
-**Last Updated:** September 16, 2026  
+**Last Updated:** September 25, 2026  
 **Status:** ✓ Production Ready
 
 ## Features
@@ -103,7 +103,7 @@ pip install pyinstaller
 
 **Build command:**
 ```bash
-.\.venv\Scripts\python.exe -m PyInstaller multitool.spec
+.\Image-Multitool-EXE\.venv\Scripts\python.exe -m PyInstaller multitool.spec
 ```
 
 **Output:**
