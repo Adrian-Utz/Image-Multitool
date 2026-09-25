@@ -93,7 +93,6 @@ a = Analysis(
         'pillow_heif',
         'pillow_heif.HeifImagePlugin',
         'pillow_heif.as_plugin',
-        'jinja2',
     ],
     hookspath=[],
     hooksconfig={},

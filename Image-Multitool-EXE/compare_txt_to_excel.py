@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+from tqdm import tqdm
 
 """
 Greetings! This tool will help see which files you are missing!
@@ -58,7 +59,7 @@ def run_txt_excel_compare():
 
     excel_values = {
         str(val).strip().lower()
-        for val in df[column]
+        for val in tqdm(df[column], desc="Comparing", ascii=True, dynamic_ncols=False)
         if pd.notna(val)
     }
 

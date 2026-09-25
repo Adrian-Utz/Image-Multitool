@@ -183,7 +183,6 @@ def set_auto_start(gui, enabled):
     settings["auto_start"] = bool(enabled)
     _save_settings(settings)
 
-
 class OptionsWindow:
     def __init__(self, parent, gui):
         self.gui = gui

@@ -32,7 +32,7 @@ Thought about making a GUI for it but I think the command line is fine for now. 
 I coded a basic GUI but it was a pain to get it to work with the progress bars and the output. I will save it for a future update when I have more time to work on it.
 Removed the GUI from this file and created a seperate GUI and EXE file.
 
-Last Update: 8/20/2026
+Last Update: 9/15/2026
 Written on: 12/3/2025
 Written by: AJ Utz
 """
@@ -43,19 +43,20 @@ def main_menu():
     RETURN_PROMPT = "\nPress Enter to return to the main menu..."
 
     while True:
-        print("\n===== File Tools Menu =====")
-        print("0. Exit")
-        print("1. Count files by extension")
-        print("2. List filenames")
-        print("3. Search and Copy files") 
-        print("4. Image reformatting / conversion")
-        print("5. Image optimization")
-        print("6. Excel Renaming Tool")
-        print("7. TXT <-> Excel Compare Tool")
-        print("8. Excel Image Downloader")
-        print("9. Folder Comparison Tool")
-        print("10. Backup Tool")
-        print("===========================")
+        print("\n            File Tools Menu           ")
+        print("┌──────────────────────────────────────┐")
+        print("│ 0. Exit                              │")
+        print("│ 1. Count files by extension          │")
+        print("│ 2. List filenames                    │")
+        print("│ 3. Search and Copy files             │")
+        print("│ 4. Image reformatting / conversion   │")
+        print("│ 5. Image optimization                │")
+        print("│ 6. Excel Renaming Tool               │")
+        print("│ 7. TXT <-> Excel Compare Tool        │")
+        print("│ 8. Excel Image Downloader            │")
+        print("│ 9. Folder Comparison Tool            │")
+        print("│ 10. Backup Tool                      │")
+        print("└──────────────────────────────────────┘")
 
         choice = input("Select an option (0-10): ").strip()
 
@@ -68,7 +69,7 @@ def main_menu():
             folder = input("Enter folder path to count: ").strip()
             if folder:
                 include = input("Include subfolders? (y/n): ").strip().lower() == "y"
-                count_files_by_extension.count_files_by_extension(folder, include_subfolders=include)
+                count_files_by_extension.count_files_by_extension(folder, include_subfolders=include, use_tqdm=True)
             input(RETURN_PROMPT)
 
         elif choice == "2":
@@ -77,7 +78,17 @@ def main_menu():
                 extensions = input("Enter extensions (comma separated, e.g. jpg,png) [jpg]: ").strip() or "jpg"
                 extensions = [extension.strip() for extension in extensions.split(",") if extension.strip()]
                 include = input("Include subfolders? (y/n): ").strip().lower() == "y"
-                list_files_by_extension.list_files_by_extension(folder, extensions, include_subfolders=include)
+                save_txt = input("Export the filenames to a .txt file? (y/n): ").strip().lower() == "y"
+                txt_file = None
+                if save_txt:
+                    txt_file = input("Enter the path to save the .txt file to: ").strip()
+                    if not txt_file:
+                        print("No path entered; skipping export.")
+                        save_txt = False
+                list_files_by_extension.list_files_by_extension(
+                    folder, extensions, include_subfolders=include, use_tqdm=True,
+                    save_txt=save_txt, txt_file=txt_file
+                )
             input(RETURN_PROMPT)
 
         elif choice == "3":

@@ -4,6 +4,7 @@ import shutil
 import threading
 import tkinter as tk
 from concurrent.futures import ThreadPoolExecutor
+from tqdm import tqdm
 
 """
 Backup utility for the multitool suite.
@@ -205,6 +206,7 @@ def create_backup(
     check_disk_space=True,
     log_each_file=False,
     fast_mode=False,
+    use_tqdm=False,
 ):
     """Create a timestamped backup folder and copy the selected files into it.
 
@@ -244,12 +246,23 @@ def create_backup(
     free_bytes = shutil.disk_usage(destination_root).free if check_disk_space else None
     used_paths = set()
 
-    total_files = _count_source_files(existing_sources, include_subfolders) if progress_callback else None
+    total_files = _count_source_files(existing_sources, include_subfolders) if (progress_callback or use_tqdm) else None
     next_progress = 1
     copied_count = 0
     counter_lock = threading.Lock()
     created_dirs = set()
     created_dirs_lock = threading.Lock()
+    pbar = tqdm(total=total_files, desc="Backing up", ascii=True, dynamic_ncols=False) if (use_tqdm and total_files) else None
+
+    deferred_logs = [] if use_tqdm else None
+    deferred_logs_lock = threading.Lock()
+
+    def _deferred_logger(message):
+        with deferred_logs_lock:
+            deferred_logs.append(message)
+
+    scan_logger = _deferred_logger if use_tqdm else logger
+    copy_logger = _deferred_logger if use_tqdm else logger
 
     def _run_copy(item):
         nonlocal copied_count, next_progress
@@ -259,7 +272,7 @@ def create_backup(
         _copy_file_with_buffer(
             source_file,
             dest_path,
-            logger=logger,
+            logger=copy_logger,
             log_each_file=log_each_file,
             preserve_metadata=preserve_metadata,
             created_dirs=created_dirs,
@@ -267,6 +280,8 @@ def create_backup(
         )
         with counter_lock:
             copied_count += 1
+            if pbar is not None:
+                pbar.update(1)
             if progress_callback and total_files:
                 percent = int((copied_count / total_files) * 100)
                 if percent >= next_progress or copied_count % 100 == 0:
@@ -284,7 +299,7 @@ def create_backup(
         used_paths,
         check_disk_space=check_disk_space,
         free_bytes=free_bytes,
-        logger=logger,
+        logger=scan_logger,
     )
 
     try:
@@ -304,6 +319,14 @@ def create_backup(
     except OSError as error:
         logger(f"[WARN] {error}")
         return None
+    finally:
+        if pbar is not None:
+            pbar.close()
+
+    #Print any scan/copy warnings only after the bar has finished filling
+    if deferred_logs:
+        for message in deferred_logs:
+            logger(message)
 
     logger(f"[INFO] Backup complete. Copied {copied_count} file(s) to {backup_root}")
     return backup_root
@@ -458,6 +481,7 @@ def backup_selected_files():
         include_subfolders=include_subfolders,
         fast_mode=fast_mode,
         logger=print,
+        use_tqdm=True,
     )
 
 

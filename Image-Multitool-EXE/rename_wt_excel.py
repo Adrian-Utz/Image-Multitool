@@ -2,6 +2,7 @@ import os
 import re
 import shutil
 import pandas as pd
+from tqdm import tqdm
 
 r"""
 This program is to make bulk renaming faster. This program should look at the filename, find the cell with matching info, then rename it to the SKU name.
@@ -20,7 +21,7 @@ Asked the user for a path to the file intead.
 
 Written by: AJ Utz
 Written on: 1/14/2026
-Last Edit: 8/20/2026
+Last Edit: 9/10/2026
 """
 
 def sanitize_filename(name):
@@ -37,6 +38,17 @@ def sanitize_filename(name):
     name = name.replace("..", "") #Remove double dots to prevent directory traversal issues
 
     return name
+
+
+def variant_label(index):
+    """Return an Excel-style alphabetic label for a zero-based variant index."""
+    label = ""
+    while True:
+        index, remainder = divmod(index, 26)
+        label = chr(ord("A") + remainder) + label
+        if index == 0:
+            return label
+        index -= 1
 
 def run_excel_image_sku_tool():
     print("\n===== Excel Image -> SKU Copy Tool =====")
@@ -111,7 +123,8 @@ def run_excel_image_sku_tool():
         exit()
 
     #Loop through each row in the Excel file and attempt to match and copy files
-    for _, row in df.iterrows():
+    deferred_logs = []
+    for _, row in tqdm(df.iterrows(), total=len(df), desc="Processing rows", ascii=True, dynamic_ncols=False):
 
         raw_image = row[image_col] #Get raw image name from Excel, which could be a string or a number
         raw_sku = row[sku_col] #Get raw SKU name from Excel, which could also be a string or a number
@@ -161,47 +174,45 @@ def run_excel_image_sku_tool():
         matching_files = []
         if exact_match:
             matching_files.append(exact_match)
-        matching_files.extend(variant_matches)
+        matching_files.extend(sorted(variant_matches, key=str.lower))
 
         #Copy matched files
         if matching_files:
-            for source_filename in matching_files:
+            for match_index, source_filename in enumerate(matching_files):
 
                 source_path = os.path.join(folder_path, source_filename)
-                base_name, original_ext = os.path.splitext(os.path.basename(source_filename))
+                _, original_ext = os.path.splitext(os.path.basename(source_filename))
 
                 if preserve_variants:
-                    match = re.search(r'[-_](.+)$', base_name)
-                    #Suffix preservation logic: If the original filename has a suffix after the base name (like "_1" or "-variant")
-                    #We capture that and append it to the new filename after the SKU name, preserving the original extension. 
-                    #If there is no suffix, we just use the SKU name with the original extension.
-                    if match:
-                        separator = match.group(0)[0]
-                        suffix_part = match.group(1)
-                        new_filename = f"{sku_name}{separator}{suffix_part}{original_ext}"
-                    else:
+                    variant_index = match_index - (1 if exact_match else 0)
+                    if source_filename == exact_match:
                         new_filename = f"{sku_name}{original_ext}"
+                    else:
+                        new_filename = f"{sku_name}_{variant_label(variant_index)}{original_ext}"
                 else:
                     new_filename = f"{sku_name}{original_ext}"
 
                 dest_path = os.path.join(output_path, new_filename)
 
                 if os.path.exists(dest_path):
-                    print(f"Skipping (already exists): {new_filename}")
+                    deferred_logs.append(f"Skipping (already exists): {new_filename}")
                     skipped_count += 1
                     continue
 
                 try:
                     shutil.copy2(source_path, dest_path)
-                    print(f"Copied: {source_filename} -> {output_path}\\{new_filename}")
+                    deferred_logs.append(f"Copied: {source_filename} -> {output_path}\\{new_filename}")
                     copied_count += 1
                 except Exception as e:
-                    print(f"Error copying {source_filename}: {e}")
+                    deferred_logs.append(f"Error copying {source_filename}: {e}")
                     error_count += 1
-
         else:
-            print(f"No match found for image: {image_name}")
+            deferred_logs.append(f"No match found for image: {image_name}")
             missing_count += 1
+
+    #Print per-row results only after the bar has finished filling
+    for message in deferred_logs:
+        print(message)
 
     print(f"""
 Summary:
@@ -345,25 +356,23 @@ def rename_from_excel_gui(
         matching_files = []
         if exact_match:
             matching_files.append(exact_match)
-        matching_files.extend(variant_matches)
+        matching_files.extend(sorted(variant_matches, key=str.lower))
 
         #If we found any matching files, we proceed to copy them to the output folder with the new SKU-based name.
         if matching_files:
-            for source_filename in matching_files:
+            for match_index, source_filename in enumerate(matching_files):
                 if cancel_event and cancel_event.is_set():
                     logger("[INFO] Rename from Excel cancelled.")
                     return
                 source_path = os.path.join(folder_path, source_filename)
-                base_name, original_ext = os.path.splitext(os.path.basename(source_filename))
+                _, original_ext = os.path.splitext(os.path.basename(source_filename))
 
                 if preserve_variants:
-                    match = re.search(r'[-_](.+)$', base_name)
-                    if match:
-                        separator = match.group(0)[0]
-                        suffix_part = match.group(1)
-                        new_filename = f"{sku_name}{separator}{suffix_part}{original_ext}"
-                    else:
+                    variant_index = match_index - (1 if exact_match else 0)
+                    if source_filename == exact_match:
                         new_filename = f"{sku_name}{original_ext}"
+                    else:
+                        new_filename = f"{sku_name}_{variant_label(variant_index)}{original_ext}"
                 else:
                     new_filename = f"{sku_name}{original_ext}"
 

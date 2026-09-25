@@ -2,8 +2,9 @@
 - Program tends to crash if you try to quit a task while it is running.(Should be fixed now ✓ )
 - Program crashes when you select more than one task.(Should be fixed now ✓ )
 - Progress bar bugs out when trying to complete more than one task.(Should be fixed now ✓ )
-- Dark mode inconsistencies.(Should be fixed now ✓ )
+- Dark mode inconsistencies. (Should be fixed now ✓ )
 - Search and Copy: If using a TXT file the task queue will show "Searching for None in "(Should be fixed now ✓ )
+- Program sometimes crashes when running `count_files_by_extension` in a empty folder, with subfolders, and selecting not to include subfolders.
 
 # Changelog:
 
@@ -84,3 +85,6 @@
 
 ## [v1.3.1](https://github.com/Adrian-Utz/Image-Multitool/releases/tag/1.3.1)
 - Made it slightly easier to make your own themes by replacing the buttons with a registry driven dropdown. Adding a new theme now consists of adding one entry in the `THEMES`. Added persistance to the options. It now looks at the same `multitool_settings.json` file in your home directory. Startup now calls `set_theme(self, load_saved_theme())` instead of hardcoded defaults. The update checker now uses the same json file as options. Instead of using ttk's built in widgets that read colors from `self.style`, I built `ask_yes_no`, `ask_integer`, and `ask_string` to replace those defaults. The program would crash if you ran `count_files_by_extension.py` in a folder with sub-folders, but selected "No" when asked if you wanted to include subfolders. This was because of the custom yes\no dilalogue box. Fixed this by adding `win.lift()` and `win.focus_force()` to all the custom dialogue boxes. Tried my best to make the entire tool accessible by keyboard. Fixed a hardcoded bug with the enter key, it was hardcoded to a single action per dialog. `choose_option`: always ran **OK** action even when **Cancel** was focused. `ask_string` `ask_integer` `choose_columns`: OK/Cancel buttons had no `Enter` binding at all.
+
+## [v1.3.2](https://github.com/Adrian-Utz/Image-Multitool/releases/tag/1.3.2)
+- Made a small change with how source variant suffixes are handled (Excel Renaming). Now, even if the base name has a suffix tag, the matching uses the full name from Excel as the base name. Found a bug in `search_files.py`. When `Include subfolders` is checked, `_search_root`'s `os.walk` loop never called `progress_callback`. Thus, the progress bar stayed pinned at 0% for the entire search. Added the choice to flatten transparency when reformatting an image. Made the cli a bit cleaner looking. Removed Jinja as a requirement. Added a progress bar to all the CLI tools using tqdm.

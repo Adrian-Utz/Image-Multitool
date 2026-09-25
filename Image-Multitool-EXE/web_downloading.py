@@ -1,6 +1,7 @@
 import builtins
 import os
 import string
+import threading
 import pandas as pd
 import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -123,6 +124,9 @@ def download_from_excel(
 
     logger(f"\nFound {len(download_jobs)} images to download.")
 
+    deferred_logs = []
+    deferred_logs_lock = threading.Lock()
+
     def download_file(job, pbar=None):
         url, base_name, suffix, index = job
 
@@ -182,7 +186,11 @@ def download_from_excel(
                         f.write(chunk)
         
         except Exception as e:
-            logger(f"Failed: {url} | {e}")
+            if use_tqdm:
+                with deferred_logs_lock:
+                    deferred_logs.append(f"Failed: {url} | {e}")
+            else:
+                logger(f"Failed: {url} | {e}")
 
     if use_tqdm:
         with tqdm(total=len(download_jobs), desc="Downloading", ascii=True, dynamic_ncols=False) as pbar:
@@ -194,6 +202,10 @@ def download_from_excel(
                         break
                     future.result()
                     pbar.update(1)
+
+        #Print any failures only after the bar has finished filling
+        for message in deferred_logs:
+            logger(message)
     else:
         completed_count = [0]
         total_downloads = len(download_jobs)

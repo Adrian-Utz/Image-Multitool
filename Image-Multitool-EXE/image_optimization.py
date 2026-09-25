@@ -3,6 +3,7 @@ import os
 import shutil
 
 from PIL import Image, ImageCms
+from tqdm import tqdm
 
 """
 Optimize an existing image without changing its file type or dimensions.
@@ -215,7 +216,7 @@ def optimize_image(input_path, output_path, max_colors=256, method="median_cut",
         return None
 
 
-def optimize_folder(input_folder, output_folder=None, max_colors=256, method="median_cut", dither=False, preserve_alpha=True, strip_metadata_enabled=True, chroma_subsampling=None, include_subfolders=False, logger=print, progress_callback=None, cancel_event=None):
+def optimize_folder(input_folder, output_folder=None, max_colors=256, method="median_cut", dither=False, preserve_alpha=True, strip_metadata_enabled=True, chroma_subsampling=None, include_subfolders=False, logger=print, progress_callback=None, cancel_event=None, use_tqdm=False):
     """Optimize all supported images in a folder without changing dimensions or file type."""
     valid_exts = {".png", ".jpg", ".jpeg", ".bmp", ".gif", ".tiff", ".tif", ".webp", ".avif", ".heic", ".heif"}
 
@@ -250,44 +251,60 @@ def optimize_folder(input_folder, output_folder=None, max_colors=256, method="me
 
     results = []
     total = len(image_files)
+    deferred_logs = [] if use_tqdm else None
+    file_logger = deferred_logs.append if use_tqdm else logger
 
-    for index, (root, filename) in enumerate(image_files, start=1):
-        #Check for cancelation event
-        if cancel_event and cancel_event.is_set():
-            logger("[INFO] Image optimization cancelled.")
-            return results
+    pbar = tqdm(total=total, desc="Optimizing", ascii=True, dynamic_ncols=False) if use_tqdm else None
+    try:
+        for index, (root, filename) in enumerate(image_files, start=1):
+            #Check for cancelation event
+            if cancel_event and cancel_event.is_set():
+                logger("[INFO] Image optimization cancelled.")
+                return results
 
-        input_path = os.path.join(root, filename)
-        #determine the target directory based on folder structure
-        if len(folders) == 1 and root == folders[0] and not include_subfolders:
-            target_dir = output_folder
-        else:
-            rel_root = os.path.relpath(root, os.path.commonpath(folders)) if len(folders) > 1 else os.path.relpath(root, folders[0])
-            target_dir = os.path.join(output_folder, rel_root) if rel_root != "." else output_folder
+            input_path = os.path.join(root, filename)
+            #determine the target directory based on folder structure
+            if len(folders) == 1 and root == folders[0] and not include_subfolders:
+                target_dir = output_folder
+            else:
+                rel_root = os.path.relpath(root, os.path.commonpath(folders)) if len(folders) > 1 else os.path.relpath(root, folders[0])
+                target_dir = os.path.join(output_folder, rel_root) if rel_root != "." else output_folder
 
-        #Create the target dir if it doesn't exist
-        os.makedirs(target_dir, exist_ok=True)
-        target_path = os.path.join(target_dir, filename)
+            #Create the target dir if it doesn't exist
+            os.makedirs(target_dir, exist_ok=True)
+            target_path = os.path.join(target_dir, filename)
 
-        #save the image to the path
-        saved = optimize_image(
-            input_path,
-            target_path,
-            max_colors=max_colors,
-            method=method,
-            dither=dither,
-            preserve_alpha=preserve_alpha,
-            strip_metadata_enabled=strip_metadata_enabled,
-            chroma_subsampling=chroma_subsampling,
-            logger=logger,
-        )
-        #add to the results list
-        if saved:
-            results.append(saved)
+            #save the image to the path
+            saved = optimize_image(
+                input_path,
+                target_path,
+                max_colors=max_colors,
+                method=method,
+                dither=dither,
+                preserve_alpha=preserve_alpha,
+                strip_metadata_enabled=strip_metadata_enabled,
+                chroma_subsampling=chroma_subsampling,
+                logger=file_logger,
+            )
+            #add to the results list
+            if saved:
+                results.append(saved)
 
-        #Update Progress
-        if progress_callback:
-            progress_callback(int((index / total) * 100))
+            if pbar is not None:
+                pbar.update(1)
+
+            #Update Progress
+            if progress_callback:
+                progress_callback(int((index / total) * 100))
+    finally:
+        if pbar is not None:
+            pbar.close()
+
+    #Flush per-file messages only after the bar has finished filling
+    if deferred_logs:
+        for message in deferred_logs:
+            logger(message)
+
 
     logger(f"\n[INFO] Optimized {len(results)} image(s) to: {output_folder}\n")
     return results
@@ -360,6 +377,7 @@ def run_image_optimizer():
         chroma_subsampling=chroma_subsampling,
         include_subfolders=include_subfolders,
         logger=print,
+        use_tqdm=True,
     )
 
     print("\nImage optimization complete.\n")

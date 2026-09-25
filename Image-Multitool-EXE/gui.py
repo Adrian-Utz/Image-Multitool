@@ -1200,6 +1200,10 @@ class GUI:
             except Exception:
                 dpi = None
 
+        preserve_transparency = self.ask_yes_no(
+            "Transparency",
+            "Keep transparency in images that support it?",
+        )
         include = self.ask_yes_no("Include subfolders?", "Include subfolders in reformatting?")
         task_name = f"Converting images to {target} in {folder.split(chr(92))[-1]}"
         self.log(f"[STARTING] {task_name}")
@@ -1216,6 +1220,7 @@ class GUI:
             resize_mode=resize_mode,
             ppi=ppi,
             dpi=dpi,
+            preserve_transparency=preserve_transparency,
             include=include,
             logger=self.log
         )

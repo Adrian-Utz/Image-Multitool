@@ -3,7 +3,8 @@ import winsound
 import random
 
 #Beginning of the Easter Egg. Listens for the konami code and triggers a random codec message from Snake.
-#Last Update: 5/22/2026
+#Last Update: 9/15/2026
+#Written on: 5/13/2026
 #Written by: AJ Utz 
 
 
@@ -43,7 +44,7 @@ class KonamiEasterEgg:
         if hasattr(self, 'konami_unlocked') and self.konami_unlocked:
             return
         self.konami_unlocked = True
-        self.log("[EASTER EGG] Incoming CODEC Transmission...")
+        self.log("\n[EASTER EGG] Incoming CODEC Transmission...")
         self._show_snake_call()
 
     def _show_snake_call(self):

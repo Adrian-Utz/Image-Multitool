@@ -3,6 +3,7 @@ import re
 import shutil
 import datetime
 import concurrent.futures
+from tqdm import tqdm
 
 """
 This module provides a file search and copy tool that can be used both in a command-line interface and integrated into a GUI application. 
@@ -11,7 +12,7 @@ Added cancellation support
 
 Written by: AJ Utz
 Written on: 4/8/2026
-Last updated: 8/20/2026
+Last updated: 9/11/2026
 
 Change Log:
 Changed the gui version to allow a .txt file to be used for search terms, and added support for that in the search_files_gui function.
@@ -98,19 +99,22 @@ def search_files():
         if include_subfolder:
             #Walk through the folder and all its subfolders
             #os.walk yields: current folder path, subfolder names, and filenames
-            for root, _, files in os.walk(folder):
-                #Loop through each file in he current folder
-                for filename in files:
-                    #Check the filename against each search term
-                    for term in current_terms:
-                        #Convert filename to lowercase so the search is case-insensitive
-                        if term in filename.lower():
-                            #If a term matches, store the full file path
-                            matches.append(os.path.join(root, filename))
-                            break
+            with tqdm(desc="Searching", unit="file", ascii=True, dynamic_ncols=False) as pbar:
+                for root, _, files in os.walk(folder):
+                    #Loop through each file in he current folder
+                    for filename in files:
+                        #Check the filename against each search term
+                        for term in current_terms:
+                            #Convert filename to lowercase so the search is case-insensitive
+                            if term in filename.lower():
+                                #If a term matches, store the full file path
+                                matches.append(os.path.join(root, filename))
+                                break
+                        pbar.update(1)
         else:
             #Only search files in the given folder
-            for filename in os.listdir(folder):
+            all_files = os.listdir(folder)
+            for filename in tqdm(all_files, desc="Searching", unit="file", ascii=True, dynamic_ncols=False):
                 #Check the filename against each search term
                 for term in current_terms:
                     #Case-insensitive comparison
@@ -250,19 +254,27 @@ def search_files_gui(folder='.', search_terms=None, txt_file=None, include_subfo
                 return local_matches
             return local_matches
 
-        # recursive search
+        # recursive search: first enumerate files (cheap) so we can report real progress
+        all_files = []
         for r, _, files in os.walk(root):
             if cancel_event and cancel_event.is_set():
                 return local_matches
             for filename in files:
-                if cancel_event and cancel_event.is_set():
-                    return local_matches
-                
-                # Check against each batch of patterns
-                for batch in pattern_batches:
-                    if _matches_any_pattern(filename, batch):
-                        local_matches.append(os.path.join(r, filename))
-                        break  # File matched, no need to check other batches
+                all_files.append((r, filename))
+
+        total = len(all_files)
+        for processed_local, (r, filename) in enumerate(all_files, start=1):
+            if cancel_event and cancel_event.is_set():
+                return local_matches
+
+            # Check against each batch of patterns
+            for batch in pattern_batches:
+                if _matches_any_pattern(filename, batch):
+                    local_matches.append(os.path.join(r, filename))
+                    break  # File matched, no need to check other batches
+
+            if progress_callback and total > 0:
+                progress_callback(int((processed_local / total) * 100))
         return local_matches
 
     # Batch search patterns into groups of 100

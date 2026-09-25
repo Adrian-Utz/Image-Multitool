@@ -1,6 +1,7 @@
 import os
 import io
 from PIL import Image, ImageCms
+from tqdm import tqdm
 try:
     import pillow_avif# noqa: F401
 except ImportError:
@@ -69,7 +70,7 @@ Last updated: 8/20/2026
 Written by: AJ Utz
 """
 
-def convert_image(input_path, output_path, target_ext, compress=False, max_size_kb=100, resize=None, resize_mode="pad", ppi=None, dpi=None, logger=print, cancel_event=None):
+def convert_image(input_path, output_path, target_ext, compress=False, max_size_kb=100, resize=None, resize_mode="pad", ppi=None, dpi=None, preserve_transparency=True, logger=print, cancel_event=None):
     try:
         input_ext = os.path.splitext(input_path)[1].lower()
         if input_ext in (".heic", ".heif") and not HEIF_SUPPORT_AVAILABLE:
@@ -139,8 +140,8 @@ def convert_image(input_path, output_path, target_ext, compress=False, max_size_
                     else:
                         img = img.resize(resize, Image.LANCZOS)
 
-            #5. Flatten ONLY if needed (to preserve quality when possible)
-            if has_alpha and target_ext in (".jpg", ".jpeg"):
+            #5. Flatten when requested or when the target format cannot store transparency
+            if has_alpha and (not preserve_transparency or target_ext in (".jpg", ".jpeg")):
                 img = flatten_transparency(img)
                 has_alpha = False  #Alpha is now gone
 
@@ -207,7 +208,7 @@ def convert_image(input_path, output_path, target_ext, compress=False, max_size_
             )
 
     except Exception as e:
-        print(f"\033[91m[ERROR] Could not convert {os.path.basename(input_path)}: {e}\033[0m")
+        logger(f"\033[91m[ERROR] Could not convert {os.path.basename(input_path)}: {e}\033[0m")
 
 
 def resize_to_square_with_padding(img, target_size, bg_color=(255, 255, 255)):
@@ -292,8 +293,7 @@ def main():
             print("Invalid input, using default 100 KB.")
             kb_limit = 100
 
-    print("Do you want to resize the images to specific dimensions? (y/n)")
-    resize_ask = input().lower().strip()
+    resize_ask = input("Do you want to resize the images to specific dimensions? (y/n): ").lower().strip()
     resize_dims = None
     resize_mode = "pad"
     if resize_ask == "y":
@@ -305,22 +305,19 @@ def main():
             print("Invalid mode selected, defaulting to pad.")
             resize_mode = "pad"
 
-    print("Do you want to set a custom PPI (print resolution)? (y/n)")
-    ppi_ask = input().lower().strip()
-
+    ppi_ask = input("Do you want to set a custom PPI (print resolution)? (y/n): ").lower().strip()
     ppi_value = None
     if ppi_ask == "y":
         ppi_value = int(input("Enter PPI value (e.g. 72, 150, 300): "))
 
-    print("Do you want to set a custom DPI (screen resolution)? (y/n)")
-    dpi_ask = input().lower().strip()
-
+    dpi_ask = input("Do you want to set a custom DPI (screen resolution)? (y/n): ").lower().strip()
     dpi_value = None
     if dpi_ask == "y":
         dpi_value = int(input("Enter DPI value (e.g. 72, 150, 300): "))
 
-    print("Include subfolders? (y/n)")
-    include_subfolders = input().lower().strip() == "y"
+    preserve_transparency = input("Keep transparency in images that support it? (y/n): ").lower().strip() != "n"
+
+    include_subfolders = input("Include subfolders? (y/n): ").lower().strip() == "y"
 
     if not target_ext.startswith("."):
         target_ext = "." + target_ext
@@ -334,9 +331,11 @@ def main():
     os.makedirs(output_folder, exist_ok=True)
 
     print("\nConverting images...\n")
+    deferred_logs = []
 
     if include_subfolders:
         # Prevent walking into the output folder
+        image_jobs = []
         for root, dirs, files in os.walk(current_folder):
             # Remove output_folder from dirs so os.walk does not descend into it
             abs_output_folder = os.path.abspath(output_folder)
@@ -346,40 +345,55 @@ def main():
                 name, ext = os.path.splitext(filename)
                 ext = ext.lower()
                 if ext in image_exts:
-                    input_path = os.path.join(root, filename)
-                    # Preserve subfolder structure in output
-                    rel_folder = os.path.join(output_folder, rel_root) if rel_root != "." else output_folder
-                    os.makedirs(rel_folder, exist_ok=True)
-                    output_path = os.path.join(rel_folder, name + target_ext)
-                    convert_image(
-                        input_path,
-                        output_path,
-                        target_ext,
-                        compress,
-                        kb_limit,
-                        resize=resize_dims,
-                        resize_mode=resize_mode,
-                        ppi=ppi_value,
-                        dpi=dpi_value
-                    )
+                    image_jobs.append((root, rel_root, name, filename))
+
+        for root, rel_root, name, filename in tqdm(image_jobs, desc="Converting", ascii=True, dynamic_ncols=False):
+            input_path = os.path.join(root, filename)
+            # Preserve subfolder structure in output
+            rel_folder = os.path.join(output_folder, rel_root) if rel_root != "." else output_folder
+            os.makedirs(rel_folder, exist_ok=True)
+            output_path = os.path.join(rel_folder, name + target_ext)
+            convert_image(
+                input_path,
+                output_path,
+                target_ext,
+                compress,
+                kb_limit,
+                resize=resize_dims,
+                resize_mode=resize_mode,
+                ppi=ppi_value,
+                dpi=dpi_value,
+                preserve_transparency=preserve_transparency,
+                logger=deferred_logs.append,
+            )
     else:
+        image_jobs = []
         for filename in os.listdir(current_folder):
             name, ext = os.path.splitext(filename)
             ext = ext.lower()
             if ext in image_exts:
-                input_path = os.path.join(current_folder, filename)
-                output_path = os.path.join(output_folder, name + target_ext)
-                convert_image(
-                    input_path,
-                    output_path,
-                    target_ext,
-                    compress,
-                    kb_limit,
-                    resize=resize_dims,
-                    resize_mode=resize_mode,
-                    ppi=ppi_value,
-                    dpi=dpi_value
-                )
+                image_jobs.append((name, filename))
+
+        for name, filename in tqdm(image_jobs, desc="Converting", ascii=True, dynamic_ncols=False):
+            input_path = os.path.join(current_folder, filename)
+            output_path = os.path.join(output_folder, name + target_ext)
+            convert_image(
+                input_path,
+                output_path,
+                target_ext,
+                compress,
+                kb_limit,
+                resize=resize_dims,
+                resize_mode=resize_mode,
+                ppi=ppi_value,
+                dpi=dpi_value,
+                preserve_transparency=preserve_transparency,
+                logger=deferred_logs.append,
+            )
+
+    #Print per-file conversion results only after the bar has finished filling
+    for message in deferred_logs:
+        print(message)
 
     print(f"\nDone! Converted images are saved in: {output_folder}\n")
 
@@ -387,7 +401,7 @@ if __name__ == "__main__":
     main()
 
 
-def batch_convert_in_folder(input_folder, target_ext, compress=False, max_size_kb=100, resize=None, resize_mode="pad", ppi=None, dpi=None, output_folder=None, include=False, logger=print, progress_callback=None, cancel_event=None):
+def batch_convert_in_folder(input_folder, target_ext, compress=False, max_size_kb=100, resize=None, resize_mode="pad", ppi=None, dpi=None, preserve_transparency=True, include=False, logger=print, cancel_event=None, **conversion_options):
     """Convert images in one or more folders to `target_ext`. Suitable for GUI use.
 
     - input_folder: directory or list/tuple of directories containing images
@@ -398,9 +412,16 @@ def batch_convert_in_folder(input_folder, target_ext, compress=False, max_size_k
     - resize_mode: 'pad' or 'crop'
     - ppi: integer or None
     - dpi: integer or None
-    - output_folder: optional specific folder to write outputs; if None a folder named converted_to_<ext> is used
-    - progress_callback: function to call with progress percentage
+    - preserve_transparency: flatten transparent images to white when False
+    - output_folder: optional keyword for a specific output folder; otherwise converted_to_<ext> is used
+    - progress_callback: optional keyword function to call with progress percentage
     """
+    output_folder = conversion_options.pop("output_folder", None)
+    progress_callback = conversion_options.pop("progress_callback", None)
+    if conversion_options:
+        unexpected_options = ", ".join(sorted(conversion_options))
+        raise TypeError(f"Unexpected conversion option(s): {unexpected_options}")
+
     image_exts = {".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tiff", ".tif", ".webp", ".avif", ".heic", ".heif"}
 
     if isinstance(input_folder, (list, tuple)):
@@ -472,6 +493,7 @@ def batch_convert_in_folder(input_folder, target_ext, compress=False, max_size_k
                 resize_mode=resize_mode,
                 ppi=ppi,
                 dpi=dpi,
+                preserve_transparency=preserve_transparency,
                 logger=logger,
                 cancel_event=cancel_event
             )
