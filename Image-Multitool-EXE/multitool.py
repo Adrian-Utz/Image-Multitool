@@ -1,14 +1,3 @@
-import image_reformatting
-import image_optimization
-import rename_wt_excel
-import compare_txt_to_excel
-import web_downloading
-import folder_compare
-import search_files
-import list_files_by_extension
-import count_files_by_extension
-import create_backup
-
 """
 This is the multitool! This file will allow you to do multiple things. See the change log for new additions.
 This program will automatically create a __pycache__ folder with a compiled version of this code. You can delete it if you need to.
@@ -32,7 +21,7 @@ Thought about making a GUI for it but I think the command line is fine for now. 
 I coded a basic GUI but it was a pain to get it to work with the progress bars and the output. I will save it for a future update when I have more time to work on it.
 Removed the GUI from this file and created a seperate GUI and EXE file.
 
-Last Update: 9/15/2026
+Last Update: 10/2/2026
 Written on: 12/3/2025
 Written by: AJ Utz
 """
@@ -66,6 +55,8 @@ def main_menu():
             break
 
         elif choice == "1":
+            import count_files_by_extension
+
             folder = input("Enter folder path to count: ").strip()
             if folder:
                 include = input("Include subfolders? (y/n): ").strip().lower() == "y"
@@ -73,6 +64,8 @@ def main_menu():
             input(RETURN_PROMPT)
 
         elif choice == "2":
+            import list_files_by_extension
+
             folder = input("Enter folder path to list files from: ").strip()
             if folder:
                 extensions = input("Enter extensions (comma separated, e.g. jpg,png) [jpg]: ").strip() or "jpg"
@@ -92,34 +85,50 @@ def main_menu():
             input(RETURN_PROMPT)
 
         elif choice == "3":
+            import search_files
+
             search_files.search_files()
             input(RETURN_PROMPT)
 
         elif choice == "4":
+            import image_reformatting
+
             image_reformatting.run_image_reformatter()
             input(RETURN_PROMPT)
 
         elif choice == "5":
+            import image_optimization
+
             image_optimization.run_image_optimizer()
             input(RETURN_PROMPT)
 
         elif choice == "6":
+            import rename_wt_excel
+
             rename_wt_excel.run_excel_image_sku_tool()
             input(RETURN_PROMPT)
 
         elif choice == "7":
+            import compare_txt_to_excel
+
             compare_txt_to_excel.run_txt_excel_compare()
             input(RETURN_PROMPT)
         
         elif choice == "8":
+            import web_downloading
+
             web_downloading.run_excel_image_downloader()
             input(RETURN_PROMPT)
 
         elif choice == "9":
+            import folder_compare
+
             folder_compare.run_folder_compare()
             input(RETURN_PROMPT)
 
         elif choice == "10":
+            import create_backup
+
             create_backup.backup_selected_files()
             input(RETURN_PROMPT)
 

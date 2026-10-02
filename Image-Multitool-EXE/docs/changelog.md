@@ -88,3 +88,6 @@
 
 ## [v1.3.2](https://github.com/Adrian-Utz/Image-Multitool/releases/tag/1.3.2)
 - Made a small change with how source variant suffixes are handled (Excel Renaming). Now, even if the base name has a suffix tag, the matching uses the full name from Excel as the base name. Found a bug in `search_files.py`. When `Include subfolders` is checked, `_search_root`'s `os.walk` loop never called `progress_callback`. Thus, the progress bar stayed pinned at 0% for the entire search. Added the choice to flatten transparency when reformatting an image. Made the cli a bit cleaner looking. Removed Jinja as a requirement. Added a progress bar to all the CLI tools using tqdm.
+
+## [v1.3.3](https://github.com/Adrian-Utz/Image-Multitool/releases/tag/1.3.3)
+- Changed the import handling for the GUI and the CLI. It should now only import the required tool modules and heavy dependencies only on the tool call. Changed some stuff for Linux compatibility.

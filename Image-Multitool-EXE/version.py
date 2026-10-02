@@ -1,2 +1,2 @@
 # Shared app version for GUI, updater, and packaging checks.
-VERSION = "1.3.2"
+VERSION = "1.3.3"

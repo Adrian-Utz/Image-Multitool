@@ -1,9 +1,13 @@
 import tkinter as tk
-import winsound
 import random
 
+try:
+    import winsound
+except ImportError:
+    winsound = None
+
 #Beginning of the Easter Egg. Listens for the konami code and triggers a random codec message from Snake.
-#Last Update: 9/15/2026
+#Last Update: 10/2/2026
 #Written on: 5/13/2026
 #Written by: AJ Utz 
 
@@ -48,11 +52,12 @@ class KonamiEasterEgg:
         self._show_snake_call()
 
     def _show_snake_call(self):
-        try:
-            sound_path = self.resource_path("assets/codec.wav")
-            winsound.PlaySound(sound_path, winsound.SND_ASYNC)
-        except:
-            pass
+        if winsound is not None:
+            try:
+                sound_path = self.resource_path("assets/codec.wav")
+                winsound.PlaySound(sound_path, winsound.SND_ASYNC)
+            except (OSError, RuntimeError):
+                pass
         self.codec_messages = [
             "📡 Incoming CODEC...\n\n"
             "Snake: ...\n\n"

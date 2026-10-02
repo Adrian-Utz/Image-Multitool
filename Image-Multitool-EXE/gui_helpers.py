@@ -6,14 +6,8 @@ This file contains helper methods for the GUI to keep the main code cleaner and 
 
 Written by: AJ Utz
 Written on: 5/20/2026
-Last updated: 7/3/2026
+Last updated: 10/2/2026
 """
-
-try:
-    import pandas as pd
-except Exception:
-    pd = None
-
 
 def select_folder(title):
     """Show a folder selection dialog and return the path or None."""
@@ -35,8 +29,10 @@ def ask_string(title, prompt, initial=""):
 
 def load_excel_columns(path):
     """Load an Excel file and return its column names as a list."""
-    if pd is None:
-        raise RuntimeError("pandas is required to load Excel files")
+    try:
+        import pandas as pd
+    except ImportError as e:
+        raise RuntimeError("pandas is required to load Excel files") from e
     df = pd.read_excel(path)
     return df.columns.tolist()
 

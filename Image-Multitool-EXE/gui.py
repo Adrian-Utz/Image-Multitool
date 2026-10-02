@@ -4,7 +4,6 @@ import threading
 from tkinter import ttk, filedialog, messagebox
 from collections import deque
 
-import check_for_update
 from version import VERSION
 from gui_helpers import (
     select_folder,
@@ -36,14 +35,20 @@ If the EXE is being made from a different location, adjust the path to pyinstall
 
 Written by: AJ Utz - and a little bit with the Ai Agent
 Written on: 3/19/2026
-Last updated: 9/3/2026
+Last updated: 10/2/2026
 """
 
 class GUI:
     def __init__(self, root):
         self.root = root
         root.title(f"Multitool GUI v{VERSION}")
-        root.state("zoomed")  # Start maximized
+        try:
+            root.state("zoomed")
+        except tk.TclError:
+            try:
+                root.attributes("-zoomed", True)
+            except tk.TclError:
+                root.state("normal")
         root.protocol("WM_DELETE_WINDOW", self._on_exit)
 
         # Executor used to run tasks. We'll orchestrate submissions so only one
@@ -251,6 +256,8 @@ class GUI:
     def _run_update_check(self, force=False):
         """Background worker that calls the update checker and updates the UI."""
         try:
+            import check_for_update
+
             available, local, latest = check_for_update.is_update_available(force=force)
         except Exception as e:
             # If something goes wrong, log it and return
