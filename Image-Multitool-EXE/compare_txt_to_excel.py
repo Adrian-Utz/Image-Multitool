@@ -1,5 +1,4 @@
 import os
-import pandas as pd
 from tqdm import tqdm
 
 """
@@ -14,6 +13,7 @@ Last Update: 5/8/2026
 """
 
 def run_txt_excel_compare():
+    import pandas as pd  #Deferred: pandas is slow to import
     print("\n==== TXT <-> Excel Column Compare Tool ====")
 
     txt_file = input("Enter .txt file name: ").strip()
@@ -103,6 +103,7 @@ def run_txt_excel_compare_gui(
         cancel_event=None
     ):
     
+    import pandas as pd  #Deferred: pandas is slow to import
     if not os.path.exists(txt_file):
         logger("TXT file not found.")
         return

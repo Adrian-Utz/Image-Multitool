@@ -91,3 +91,6 @@
 
 ## [v1.3.3](https://github.com/Adrian-Utz/Image-Multitool/releases/tag/1.3.3)
 - Changed the import handling for the GUI and the CLI. It should now only import the required tool modules and heavy dependencies only on the tool call. Changed some stuff for Linux compatibility.
+
+## [v1.3.4](https://github.com/Adrian-Utz/Image-Multitool/releases/tag/1.3.4)
+- Added a **Cancel Pending...** control so users can select and remove an individual queued task before it starts. Made the excel renaming function a bit better by adding the defs: `contains_term` , `find_matches` , and `all_excel_bases`. The search term must not be stuck with other letters or digits. Moved the importing of pandas to inside the functions. 

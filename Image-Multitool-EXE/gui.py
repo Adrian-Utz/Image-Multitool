@@ -17,7 +17,7 @@ from gui_helpers import (
     resource_path,
 )
 from konami import KonamiEasterEgg
-from options import OptionsWindow, apply_theme, set_theme, load_saved_theme, load_saved_auto_start
+from options import THEMES, OptionsWindow, apply_theme, set_theme, load_saved_theme, load_saved_auto_start
 
 r"""
 Description:
@@ -27,15 +27,15 @@ Each tool is launched with user-selected options, and progress/status is display
 
 Make sure you configure a virtual environment before trying to build your own version.
 When you want to apply changes to the code. Run this in the terminal to rebuild the application and see the changes:
-.\Image-Multitool-EXE\.venv\Scripts\python.exe -m PyInstaller .\Image-Multitool-exe\multitool.spec
+.\.venv\Scripts\python.exe -m PyInstaller .\Image-Multitool-EXE\multitool.spec
 Or use this one to clean and rebuild the package from scratch:
-.\Image-Multitool-EXE\.venv\Scripts\python.exe -m PyInstaller --clean --noconfirm .\Image-Multitool-exe\multitool.spec
+.\.venv\Scripts\python.exe -m PyInstaller --clean --noconfirm .\Image-Multitool-EXE\multitool.spec
 
 If the EXE is being made from a different location, adjust the path to pyinstaller.exe accordingly. Check out the Readme for more details.
 
-Written by: AJ Utz - and a little bit with the Ai Agent
+Written by: AJ Utz - and tested with the Ai Agent
 Written on: 3/19/2026
-Last updated: 10/2/2026
+Last updated: 10/5/2026
 """
 
 class GUI:
@@ -133,6 +133,8 @@ class GUI:
         ttk.Label(status_frame, text="|", foreground="gray").pack(side="left", padx=3)
         self.cancel_button = ttk.Button(status_frame, text="Cancel Current", command=self._cancel_current_task, state="disabled")
         self.cancel_button.pack(side="left", padx=5)
+        self.cancel_pending_button = ttk.Button(status_frame, text="Cancel Pending...", command=self._cancel_pending_task, state="disabled")
+        self.cancel_pending_button.pack(side="left", padx=5)
         self.start_queue_button = ttk.Button(status_frame, text="Start Queue", command=self._start_queue, state="disabled")
         self.start_queue_button.pack(side="left", padx=5)
 
@@ -383,6 +385,7 @@ class GUI:
                     
                     #Update the task counter label to show counts of active and pending tasks
                     self.task_counter_label.config(text=f"Tasks: {active_count} active, {pending_count} pending")
+                self.cancel_pending_button.config(state="normal" if pending_count else "disabled")
             
             #Finally, we set the queue_text widget back to read-only after updating it.
             self.queue_text.config(state="disabled")
@@ -390,11 +393,99 @@ class GUI:
         self._safe_after(0, _update)
         self._update_start_queue_button_state()
 
+    def _cancel_pending_task(self):
+        """Let the user select and remove a task that has not started yet."""
+        with self.task_lock:
+            pending_tasks = list(self.task_queue)
+
+        if not pending_tasks:
+            return
+
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Cancel Pending Task")
+        dialog.transient(self.root)
+        dialog.resizable(True, True)
+        dialog.geometry("360x240")
+        dialog.configure(bg=self.style.lookup("TFrame", "background"))
+        colors = THEMES.get(self.current_theme, THEMES["light"])
+
+        dialog.minsize(360, 200)
+
+        # Pack the buttons first so they keep their space when the dialog is resized smaller.
+        button_frame = ttk.Frame(dialog)
+        button_frame.pack(side="bottom", fill="x", padx=10, pady=(5, 10))
+        cancel_button = ttk.Button(button_frame, text="Cancel Selected Task", state="disabled")
+        cancel_button.pack(side="right", padx=(5, 0))
+        ttk.Button(button_frame, text="Close", command=dialog.destroy).pack(side="right")
+
+        ttk.Label(dialog, text="Select a pending task to remove from the queue:").pack(
+            side="top", anchor="w", padx=10, pady=(10, 5)
+        )
+        list_frame = ttk.Frame(dialog)
+        list_frame.pack(fill="both", expand=True, padx=10, pady=5)
+        list_frame.rowconfigure(0, weight=1)
+        list_frame.columnconfigure(0, weight=1)
+
+        task_list = tk.Listbox(
+            list_frame,
+            exportselection=False,
+            bg=colors["text_bg"],
+            fg=colors["text_fg"],
+            selectbackground=colors["progress_color"],
+            selectforeground=colors["text_bg"],
+            highlightthickness=0,
+            relief="flat",
+        )
+        task_list.grid(row=0, column=0, sticky="nsew")
+        scrollbar = ttk.Scrollbar(list_frame, orient="vertical", command=task_list.yview)
+        scrollbar.grid(row=0, column=1, sticky="ns")
+        task_list.config(yscrollcommand=scrollbar.set)
+        for index, task_item in enumerate(pending_tasks, 1):
+            task_list.insert(tk.END, f"{index}. {task_item['task_name']}")
+
+        def _update_cancel_button(event):
+            cancel_button.config(state="normal" if event.widget.curselection() else "disabled")
+
+        def _cancel_selected(event=None):
+            if event is not None and event.widget is not task_list:
+                return
+            selection = task_list.curselection()
+            if not selection:
+                return
+
+            task_item = pending_tasks[selection[0]]
+            task_name = task_item["task_name"]
+            with self.task_lock:
+                queue_index = next(
+                    (index for index, queued_task in enumerate(self.task_queue) if queued_task is task_item),
+                    None,
+                )
+                if queue_index is not None:
+                    del self.task_queue[queue_index]
+                    self.completed_tasks += 1
+
+            if queue_index is None:
+                messagebox.showinfo(
+                    "Task Already Started",
+                    f'"{task_name}" is no longer pending. Use Cancel Current if it is running.',
+                    parent=dialog,
+                )
+                dialog.destroy()
+                self._update_queue_display()
+                return
+
+            self.log(f"[INFO] Removed pending task: {task_name}")
+            dialog.destroy()
+            self._update_status_idle()
+            self._update_queue_display()
+
+        task_list.bind("<<ListboxSelect>>", _update_cancel_button)
+        task_list.bind("<Double-Button-1>", _cancel_selected)
+        cancel_button.config(command=_cancel_selected)
+        dialog.grab_set()
+
     def _cancel_current_task(self):
-        """Cancel the currently running task.
-        If there's a future for the current task, try to cancel it. Most
-        tasks are only submitted when running, so cancellation here often
-        won't succeed; we also treat queued (pending) items separately."""
+        """Cancel the current task, or its future if it has not started yet."""
         if self._current_task_future:
             try:
                 if self._current_task_future.cancel():
@@ -402,13 +493,6 @@ class GUI:
                     with self.task_lock:
                         if self._current_task_name and self._current_task_name in self.active_tasks:
                             self.active_tasks.remove(self._current_task_name)
-                        # Remove any pending queued item with same name
-                        for item in self.task_queue:
-                            if isinstance(item, dict) and item.get('task_name') == self._current_task_name:
-                                try:
-                                    self.task_queue.remove(item)
-                                except ValueError:
-                                    pass
                         self.completed_tasks += 1
                         self._current_task_future = None
                         self._current_cancel_event = None
@@ -427,13 +511,6 @@ class GUI:
             with self.task_lock:
                 if self._current_task_name and self._current_task_name in self.active_tasks:
                     self.active_tasks.remove(self._current_task_name)
-                # Also remove any pending queued items that match the current name
-                for item in self.task_queue:
-                    if isinstance(item, dict) and item.get('task_name') == self._current_task_name:
-                        try:
-                            self.task_queue.remove(item)
-                        except ValueError:
-                            pass
             # Update status to show cancellation in progress
             try:
                 self.status_label.config(text="Cancelling...", foreground="orange")

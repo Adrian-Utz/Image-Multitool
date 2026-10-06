@@ -2,8 +2,8 @@
 
 A comprehensive file management and processing application with a modern, responsive GUI. Convert images, rename files using Excel data, search and copy files, download images from URLs, compare folders, and more—all with real-time progress tracking and background threading.
 
-**Version:** 1.3.3  
-**Last Updated:** 10/2/2026  
+**Version:** 1.3.4  
+**Last Updated:** 10/6/2026  
 **Status:** ✓ Production Ready
 
 ## Features
@@ -103,7 +103,7 @@ pip install pyinstaller
 
 **Build command:**
 ```bash
-.\Image-Multitool-EXE\.venv\Scripts\python.exe -m PyInstaller multitool.spec
+.\.venv\Scripts\python.exe -m PyInstaller .\Image-Multitool-EXE\multitool.spec
 ```
 
 **Output:**
@@ -125,7 +125,7 @@ pip install pyinstaller
 │  Tools (Left Panel)     │  Status & Controls (Top Right)   │
 │                         │  ├─ Status: Idle/Running         │
 │  • Count files          │  ├─ Task Counter                 │
-│  • List files           │  ├─ Cancel Button                │
+│  • List files           │  ├─ Cancel Current / Pending     │
 │  • Search & Copy        │  └─ (Optional)Start Button       │
 │  • Image Reformat       │                                  │
 │  • Image Optimization   │                                  │
@@ -201,7 +201,8 @@ Shows top 2 active and pending tasks:
 ### Cancelling Operations
 1. Click the **Cancel Current** button (active when running)
 2. Current task will stop gracefully
-3. Any pending tasks remain in queue
+3. Click **Cancel Pending...** and select a queued task to remove it before it starts
+4. Other pending tasks remain in queue
 
 ### Threading Safety
 - All background work isolated from GUI thread

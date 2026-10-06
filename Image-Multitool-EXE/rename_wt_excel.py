@@ -1,7 +1,6 @@
 import os
 import re
 import shutil
-import pandas as pd
 from tqdm import tqdm
 
 r"""
@@ -21,8 +20,10 @@ Asked the user for a path to the file intead.
 
 Written by: AJ Utz
 Written on: 1/14/2026
-Last Edit: 9/10/2026
+Last Edit: 10/6/2026
 """
+
+VALID_EXTENSIONS = ('.jpg', '.jpeg', '.webp', '.tif', '.tiff')
 
 def sanitize_filename(name):
 
@@ -50,10 +51,45 @@ def variant_label(index):
             return label
         index -= 1
 
+def contains_term(text, term):
+    """True if term appears in text and isn't glued to other letters/digits."""
+    return re.search(r"(?<![a-z0-9])" + re.escape(term) + r"(?![a-z0-9])", text) is not None
+
+
+def find_matches(excel_base, filenames, all_bases):
+    """Return (primary, others). Files match if their name equals or contains the search term
+    (e.g. "My_Store_Image_N190-850" for "N190-850"). A file that also contains a longer
+    search term from the sheet belongs to that longer term instead."""
+    longer_terms = [b for b in all_bases if len(b) > len(excel_base)]
+    matches = []
+    for original_filename in filenames:
+        file_base = os.path.splitext(os.path.basename(original_filename))[0].strip().lower()
+        if file_base == excel_base:
+            matches.append((0, len(file_base), original_filename))
+        elif contains_term(file_base, excel_base) and not any(contains_term(file_base, b) for b in longer_terms):
+            matches.append((1, len(file_base), original_filename))
+    matches.sort(key=lambda m: (m[0], m[1], m[2].lower()))
+    files = [m[2] for m in matches]
+    if not files:
+        return None, []
+    return files[0], files[1:]
+
+
+def all_excel_bases(df, image_col):
+    """Collect normalized base names of every image entry in the sheet."""
+    bases = set()
+    for raw in df[image_col].dropna():
+        name = str(int(raw)) if isinstance(raw, float) else str(raw)
+        name = sanitize_filename(name).strip().lower()
+        stem, ext = os.path.splitext(name)
+        bases.add(stem.strip() if ext in VALID_EXTENSIONS else name)
+    return bases
+
 def run_excel_image_sku_tool():
+    import pandas as pd  #Deferred: pandas is slow to import
     print("\n===== Excel Image -> SKU Copy Tool =====")
     
-    valid_extensions = ('.jpg', '.jpeg', '.webp')
+    valid_extensions = VALID_EXTENSIONS
     output_folder = 'renamed_by_sku'
 
     copied_count = 0
@@ -124,6 +160,7 @@ def run_excel_image_sku_tool():
 
     #Loop through each row in the Excel file and attempt to match and copy files
     deferred_logs = []
+    all_bases = all_excel_bases(df, image_col)
     for _, row in tqdm(df.iterrows(), total=len(df), desc="Processing rows", ascii=True, dynamic_ncols=False):
 
         raw_image = row[image_col] #Get raw image name from Excel, which could be a string or a number
@@ -155,26 +192,8 @@ def run_excel_image_sku_tool():
         excel_base = os.path.splitext(image_name)[0].strip().lower()
         
         #Find all matching files in the folder
-        exact_match = None
-        variant_matches = []
-
-        #We loop through the jpg files and check for matches based on the base name. 
-        #We look for an exact match first, and if we find it, we store it as the exact match. 
-        #We also look for variant matches that start with the base name followed by an underscore or hyphen, and we store those in a list of variant matches.
-        #This way, we can prioritize the exact match when copying, but also include any relevant variants if the user chooses to preserve them.
-        for original_filename in jpg_files.values():
-            file_base = os.path.splitext(os.path.basename(original_filename))[0]
-            file_base_normalized = file_base.strip().lower()
-            if file_base_normalized == excel_base:
-                exact_match = original_filename
-            elif file_base_normalized.startswith(excel_base + "_") or file_base_normalized.startswith(excel_base + "-"):
-                variant_matches.append(original_filename)
-
-        #Build final matching list
-        matching_files = []
-        if exact_match:
-            matching_files.append(exact_match)
-        matching_files.extend(sorted(variant_matches, key=str.lower))
+        exact_match, variant_matches = find_matches(excel_base, jpg_files.values(), all_bases)
+        matching_files = ([exact_match] if exact_match else []) + variant_matches
 
         #Copy matched files
         if matching_files:
@@ -242,8 +261,9 @@ def rename_from_excel_gui(
     ):
     
     """Non-interactive wrapper for GUI use. Mirrors the behavior of run_excel_image_sku_tool but accepts parameters."""
+    import pandas as pd  #Deferred: pandas is slow to import
     folder_path = folder_path or '.'
-    valid_extensions = ('.jpg', '.jpeg', 'webp')
+    valid_extensions = VALID_EXTENSIONS
     output_path = os.path.join(folder_path, output_folder)
     os.makedirs(output_path, exist_ok=True)
 
@@ -305,6 +325,7 @@ def rename_from_excel_gui(
     skipped_count = 0
     error_count = 0
     total_rows = len(df)
+    all_bases = all_excel_bases(df, image_col)
 
     for row_idx, (_, row) in enumerate(df.iterrows()):
         if cancel_event and cancel_event.is_set():
@@ -339,24 +360,8 @@ def rename_from_excel_gui(
                 image_name += ".jpg"
             excel_base = os.path.splitext(image_name)[0].strip().lower()
 
-        exact_match = None
-        variant_matches = []
-
-        #We loop through the files to check and look for matches based on the base name.
-        #If ignore_file_extension is True, we will match based on the base name regardless of the file extension,
-        #allowing for more flexibility in handling different image formats.
-        for original_filename in files_to_check.values():
-            file_base = os.path.splitext(os.path.basename(original_filename))[0]
-            file_base_normalized = file_base.strip().lower()
-            if file_base_normalized == excel_base:
-                exact_match = original_filename
-            elif file_base_normalized.startswith(excel_base + "_") or file_base_normalized.startswith(excel_base + "-"):
-                variant_matches.append(original_filename)
-
-        matching_files = []
-        if exact_match:
-            matching_files.append(exact_match)
-        matching_files.extend(sorted(variant_matches, key=str.lower))
+        exact_match, variant_matches = find_matches(excel_base, files_to_check.values(), all_bases)
+        matching_files = ([exact_match] if exact_match else []) + variant_matches
 
         #If we found any matching files, we proceed to copy them to the output folder with the new SKU-based name.
         if matching_files:

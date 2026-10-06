@@ -2,7 +2,6 @@ import builtins
 import os
 import string
 import threading
-import pandas as pd
 import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
@@ -37,6 +36,7 @@ def download_from_excel(
     progress_callback=None,
     cancel_event=None,
 ):
+    import pandas as pd  #Deferred: pandas is slow to import
     df = pd.read_excel(file_name)
 
     #Convert column indexes to names
@@ -193,15 +193,15 @@ def download_from_excel(
                 logger(f"Failed: {url} | {e}")
 
     if use_tqdm:
-        with tqdm(total=len(download_jobs), desc="Downloading", ascii=True, dynamic_ncols=False) as pbar:
-            with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                futures = [executor.submit(download_file, job, pbar) for job in download_jobs]
+        #Use tqdm for the loading bar if in the CLI.
+        with tqdm(total=len(download_jobs), desc="Downloading", ascii=True, dynamic_ncols=False) as pbar, ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = [executor.submit(download_file, job, pbar) for job in download_jobs]
 
-                for future in as_completed(futures):
-                    if cancel_event and cancel_event.is_set():
-                        break
-                    future.result()
-                    pbar.update(1)
+            for future in as_completed(futures):
+                if cancel_event and cancel_event.is_set():
+                    break
+                future.result()
+                pbar.update(1)
 
         #Print any failures only after the bar has finished filling
         for message in deferred_logs:
@@ -228,6 +228,7 @@ def download_from_excel(
 
 
 def run_excel_image_downloader():
+    import pandas as pd  #Deferred: pandas is slow to import
     print("\n===== Excel Image Downloader =====")
 
     file_name = input("Enter Excel file name (include .xlsx): ").strip()
