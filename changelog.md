@@ -1,0 +1,96 @@
+# Currently known issues:
+- Program tends to crash if you try to quit a task while it is running.(Should be fixed now ✓ )
+- Program crashes when you select more than one task.(Should be fixed now ✓ )
+- Progress bar bugs out when trying to complete more than one task.(Should be fixed now ✓ )
+- Dark mode inconsistencies. (Should be fixed now ✓ )
+- Search and Copy: If using a TXT file the task queue will show "Searching for None in "(Should be fixed now ✓ )
+- Program sometimes crashes when running `count_files_by_extension` in a empty folder, with subfolders, and selecting not to include subfolders.
+
+# Changelog:
+
+## v1.0.0 
+- Initial release with all core functionalities integrated into the GUI.
+
+## v1.0.1 
+- Added better error handling and logging for the Excel image downloader, and improved the task queue display to show active and pending tasks more clearly. Also added a cancel button to allow users to cancel the currently running task.(Fixed in v1.1.3)
+
+## v1.0.2 
+- Updated the Excel image downloader to show available columns in the selected Excel file before prompting for column selection, and added support for selecting columns by index or name with more  flexible input parsing. Also improved logging and error handling in the downloader tool. Added the ignore_file_extension option to the Excel renaming tool to allow matching based on base name regardless of file extension, providing more flexibility in handling different image formats.
+
+## v1.0.3 
+- Added a _safe_after() helper method to safely schedule Tkinter operations from any thread, preventing potential crashes or runtime errors if the main loop is not running. Updated log(), stop(), start(), and _update_queue_display() to use _safe_after() for thread-safe UI updates, ensuring that log messages and queue display updates do not cause issues when called from background threads.
+
+## v1.0.4 
+- Added a "?" help button next to each tool in the left pane that shows a message box with the specific requirements for that tool when clicked.
+
+## v1.0.5 
+- Fixed a bug where the user couldn't select a .txt file for search terms in the Search & Copy tool when using the GUI, and added support for that in the search_files_gui function. Added an easter egg triggered by the Konami code that shows a special CODEC transmission message.
+
+## v1.0.6 
+- Improved Codec quality.
+
+## v1.0.7 
+- Added the search function to the excel renaming tool. This makes it easier for the user to select the column they want. Method name: choose_column.
+
+## v1.0.8 
+- Added the ability to add subfolders in the image reformatting tool. Changes it so the program does not look into the output folder when reformatting. This would cause the program to repeatedly reformat the same images over and over again, creating a huge mess of files.  Now it ignores the output folder when looking for files to reformat,  so it only reformats the original files once and saves them to the output folder without touching them again. Added the same functionality to the excel renaming tool.
+
+## v1.1.0
+- Added functionality to the image reformatter. Allowing it to handle and edit .avif files. Added the pillow_avif import to the hiddenimports in multitool.spec for the EXE.
+
+## v1.1.1
+- Changed the progress bar to show a percentage, and fill from left to right during job completion. Fixed the renaming with excel to handle "0" at the begining of the file name. 
+
+## v1.1.2
+- Fixed the progress bar to run while the logger prints output in the list_files_by_extension.py program.
+
+## v1.1.3
+- Fixed the cancel task button so it no longer crashes, and cancels the current task properly. Added a Light mode / Dark mode to make it easier on the eyes. Fixed some theme related issues. Moved the Konami code easter egg to its own file.(The gui was 1000 lines long. I'm trying to cut it down a bit.)
+
+## v1.1.4
+- Fixed a potential bug. This line: `print(f"Copied: {source_filename} -> {output_path}\{new_filename}")` was using a single backslash which could cause issues on some systems. I changed it to this: `print(f"Copied: {source_filename} -> {output_path}\\{new_filename}")` could be seen as a invalid escape sequence. By using a double backslash, we ensure that it is treated as a literal backslash in the output string, which is important for correctly displaying file paths on Windows systems. Added jinja2 to the requirements. 
+
+## v1.2.0
+- Changes the behavior of the image reformatter. Allowed the user to specify the allowed file size. Added the crop function. Added the ability to use MB during the compression stage for the image reformatter.
+
+## v1.2.1
+- Changed some of the Popups in the web_downloading section. Making it more user friendly. Added the gui_helpers file to cut down on the main gui file size.
+
+## v1.2.2
+- Optimized the search_files_gui function to support searching multiple root folders in parallel using a thread pool, which can speed up searches across multiple directories. Added the following to search_files: Pre-compiled patterns(Regex patterns are compiled once before the search, not once every filename check.). Batched into groups of 100. Early termination. _matches_any_pattern() function. The biggest improvement is the perfromance.
+
+## v1.2.3
+- Added .heif and .heic support to the image reformatter. Added a total to the bottom of the count_files_by_extension program. Updated readme, fixed build commands. Fixed the task_name error in the gui. When searching for a file with a .txt file it now shows the file path.
+
+## v1.2.4
+- Fixed the queue system, it now functions as intended. You can now queue multiple actions at once and It will work through them one at a time. This also fixed the progress bar problem. Fixed a crash that happened in the completion branch after the last queued task was finished. The old flow could still be updating queue/UI state in a way that re-entered the same task-lock/GUI update sequence while the final task was finishing, which can lead to a crash or inconsistent Tkinter state. 
+
+## v1.2.5
+- Moved the Options tab from the right side to a button just above the Exit button. Moved the color switcher to the options panel, and added a auto-start switch. Added the start button to the top, next to the cancel button. (You can only see it if auto-start is switched to off.) Fixed a crash that happened to the folder_compare tool. It assumed both selections were valid folders and called os.listdir() directly. Moved the color management to the options file. Updated the Cropping mechanic in the image reformatter so you can dynamically crop. You are no longer restricted to a square. 
+
+## [v1.2.6](https://github.com/Adrian-Utz/Image-Multitool/releases/tag/1.2.6)
+- Added dpi changing to the image reformatter. Added a iteration function in the image reformatter.
+
+## [v1.2.7](https://github.com/Adrian-Utz/Image-Multitool/releases/tag/1.2.7)
+- Created the file backup tool (create_backup.py). Changed it so the user can select multiple files/folders at once and store them in a backup folder. Ruduced startup overhead by combining the file scanning and size estimation into a single pass. Removed unnecessary sorting for directory traversal. Disabled per-file log output unless requested. Added a fast mode. Be careful as it skips disk-space verification, skips metadata preservation, and avoids extra logging overhead.
+
+## [v1.2.8](https://github.com/Adrian-Utz/Image-Multitool/releases/tag/1.2.8)
+- Created a program that checks for the latest version on GitHub. It checks weekly for the latest version. Note: To avoid GitHub's rate limit set a token: `GITHUB_TOKEN=<your_token>` in environment. You can force the check to run in the options menu. Moved the version number to its own module and updated the GUI to use the version module. The update checker no longer needs to read the gui.py as a physical file at runtime. The Exit button wasn't working if you tried to run the program from pythons IDLE. That is now fixed.
+
+## [v1.2.9](https://github.com/Adrian-Utz/Image-Multitool/releases/tag/1.2.9)
+- Image optimization is added to the workflow. image_optimization.py allows the user to choose the palette method ([median_cut](https://en.wikipedia.org/wiki/Median_cut), [octree](https://en.wikipedia.org/wiki/Octree)), the max palette size (2-256), dithering ([Ordered](https://en.wikipedia.org/wiki/Ordered_dithering), [Floyd-Steinberg](https://en.wikipedia.org/wiki/Floyd%E2%80%93Steinberg_dithering)), and transparency preservation. Median cut is often prefered for reducing color count while maintaining visual quality, especially in smooth and uniform image. Octree is useful for textures with complex patterns or small details, as it can handle more variation in pixel intensity. However, it might require more computational resources due to its hierarchical structure. Added the stripping of metadata, and added _save_kargs_for(ext) which returns either PNG(`optimize=True`, `compress_level=9`) or JPEG(`optimize=True`). Also changed the way the program "never increases file size". I had it set up to use JPEG size assumptions, that failed once `optimize=True`. Added subsampling for your jpegs/jpgs. [4:4:4](https://en.wikipedia.org/wiki/Chroma_subsampling#4:4:4), [4:2:2](https://en.wikipedia.org/wiki/Chroma_subsampling#4:2:2), and [4:2:0](https://en.wikipedia.org/wiki/Chroma_subsampling#4:2:0) are all options you can use. Fixed a problem with Tcl/Tk9.0 virtual zipfs paths. Explicitly bundle python 3.14's tcl/tk data directory. Made every step optional in the GUI.
+
+## [v1.3.0](https://github.com/Adrian-Utz/Image-Multitool/releases/tag/1.3.0)
+- Updated the CLI to ask for Paths instead of assuming the files were in the same directory. Fixed a tuple bug in image reformatting. os.path.splitext(filename) returns a tuple containing the filename stem and extension. Before the code was assigning the whole tuple to name, this caused a "TypeError: can only concatenate tuple (not "str") to tuple". Did some basic code clean-up. Got rid of unused parameters, character classes, the works. Fixed a warning with the comments in the gui.py file. It kept on trying to use the `\.` in the comments as a escape sequence. Changed the comment to a raw string.
+
+## [v1.3.1](https://github.com/Adrian-Utz/Image-Multitool/releases/tag/1.3.1)
+- Made it slightly easier to make your own themes by replacing the buttons with a registry driven dropdown. Adding a new theme now consists of adding one entry in the `THEMES`. Added persistance to the options. It now looks at the same `multitool_settings.json` file in your home directory. Startup now calls `set_theme(self, load_saved_theme())` instead of hardcoded defaults. The update checker now uses the same json file as options. Instead of using ttk's built in widgets that read colors from `self.style`, I built `ask_yes_no`, `ask_integer`, and `ask_string` to replace those defaults. The program would crash if you ran `count_files_by_extension.py` in a folder with sub-folders, but selected "No" when asked if you wanted to include subfolders. This was because of the custom yes\no dilalogue box. Fixed this by adding `win.lift()` and `win.focus_force()` to all the custom dialogue boxes. Tried my best to make the entire tool accessible by keyboard. Fixed a hardcoded bug with the enter key, it was hardcoded to a single action per dialog. `choose_option`: always ran **OK** action even when **Cancel** was focused. `ask_string` `ask_integer` `choose_columns`: OK/Cancel buttons had no `Enter` binding at all.
+
+## [v1.3.2](https://github.com/Adrian-Utz/Image-Multitool/releases/tag/1.3.2)
+- Made a small change with how source variant suffixes are handled (Excel Renaming). Now, even if the base name has a suffix tag, the matching uses the full name from Excel as the base name. Found a bug in `search_files.py`. When `Include subfolders` is checked, `_search_root`'s `os.walk` loop never called `progress_callback`. Thus, the progress bar stayed pinned at 0% for the entire search. Added the choice to flatten transparency when reformatting an image. Made the cli a bit cleaner looking. Removed Jinja as a requirement. Added a progress bar to all the CLI tools using tqdm.
+
+## [v1.3.3](https://github.com/Adrian-Utz/Image-Multitool/releases/tag/1.3.3)
+- Changed the import handling for the GUI and the CLI. It should now only import the required tool modules and heavy dependencies only on the tool call. Changed some stuff for Linux compatibility.
+
+## [v1.3.4](https://github.com/Adrian-Utz/Image-Multitool/releases/tag/1.3.4)
+- Added a **Cancel Pending...** control so users can select and remove an individual queued task before it starts. Made the excel renaming function a bit better by adding the defs: `contains_term` , `find_matches` , and `all_excel_bases`. The search term must not be stuck with other letters or digits. Moved the importing of pandas to inside the functions. 
