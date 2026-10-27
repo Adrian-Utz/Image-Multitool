@@ -1,34 +1,32 @@
 # Code of Conduct
 
-## Pledge
+## Introduction
+Welcome to Image-Multitool, where we strive to create an proper, respectful, and professional environment for all participants. This Code of Conduct outlines our expectations for behavior within the program.
 
-We as members of this community pledge to make a harassment free experience for all users.  
+## General Principles
+1. **Respect others**: Treat others with respect, kindness, and professionalism.
+2. **Be inclusive**: Foster a culture that values other's insights and opinions.
+3. **Follow rules**: Adhere to laws, regulations, and program guidelines.
+4. **Use good judgment**: Exercise sound judgment in your interactions and decisions.
 
-Acting and sharing ideas to better educate ourselves to improve our standards.
+## Specific Behavior Expectations
+1. **Harassment:** No behavior that is harassing or threatening will be tolerated. This includes, but is not limited to:
+ + Verbal or written abuse
+ + Unwanted physical contact
+ + Exclusionary language or behavior
+2. **Bias:** Avoid making assumptions based on personal characteristics such as race, gender, sexual orientation, disability, age, or other protected groups.
+3. **Plagiarism and Intellectual Property:** Properly cite sources and respect the intellectual property of others.
+4. **Confidentiality:** Protect confidential information, including personal data.
 
-## Standards
+## Consequences
+* Failure to comply with this Code of Conduct may result in consequences such as:
+ + Verbal warnings
+ + Written warnings
+ + Temporary suspension or removal from the program
 
-Examples of behavior that we expect from this community:
+## Amendments and Updates
+* This Code of Conduct is subject to change. All changes will be communicated through this file.
+* It is your responsibility to stay informed about any updates.
 
-* Showing kindness and pacience to others.  
-* Giving and accepting constructive feedback.  
-* Being responsible for ones actions on this platform.  
-* Learning from our past mistakes.  
-
-Examples of behavior that is not acceptable:
-
-* Foul language or imagery, sexualized language or imagery, or sexual attention or advances of any kind.
-* Trolling, derogrtory comments or personal / political attacks.
-* Public or pirvate Harrassment.
-* Publishing others private information without their explicit permission.
-
-## Enforcement
-Instances of abuse, harassment, or other unacceptable behavior may be reported to the community leaders.
-
-## Conclusion
-By continuing to be active on this page the user is subject to the following:
-
-### 1. Correction
-### 2. Warnings
-### 3. Temporary Bans
-### 4. Permanant Bans
+## Acknowledgement
+By participating in this program, you acknowledge that you have read, understood, and agree to abide by this Code of Conduct.

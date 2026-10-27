@@ -213,28 +213,33 @@ Shows top 2 active and pending tasks:
 ## File Structure
 
 ```
-multitool/
-├── gui.py                            # Main GUI application (enhanced threading)
-├── count_files_by_extension.py       # Count files tool (logger support)
-├── list_files_by_extension.py        # List files tool (GUI wrapper)
-├── search_files.py                   # Search & copy tool (GUI wrapper)
-├── image_reformatting.py             # Image conversion (batch processor)
-├── image_optimization.py             # Image optimization(uses octree and median cut)
-├── create_backup.py                  # File backup tool 
-├── rename_wt_excel.py                # Excel rename tool (file mapping)
-├── compare_txt_to_excel.py           # TXT/Excel comparison tool
-├── web_downloading.py                # Image downloader (multi-threaded)
-├── folder_compare.py                 # Folder diff tool (GUI wrapper)
-├── gui_helpers.py                    # Helper functions for the GUI
-├── options.py                        # Seperate Options window
-├── requirements.txt                  # Python dependencies
-├── multitool.spec                    # PyInstaller build config
-├── README.md                         # This file
-├── docs/
-│   ├── codeofconduct.md              # Code of conduct
-│   └── changelog.md                  # Documentation of changes
-└── dist/
-    └── Multitool.exe                 # Standalone executable (64 MB)
+Image-Multitool
+├── dist/
+│   └── Multitool.exe                 # Standalone executable (64 MB)
+├── Image-Multitool-EXE/
+│  ├── count_files_by_extension.py       # Count files tool (logger support)
+│  ├── search_files.py                   # Search & copy tool (GUI wrapper)
+│  ├── create_backup.py                  # File backup tool 
+│  ├── compare_txt_to_excel.py           # TXT/Excel comparison tool
+│  ├── folder_compare.py                 # Folder diff tool (GUI wrapper)
+│  ├── gui_helpers.py                    # Helper functions for the GUI
+│  ├── gui.py                            # Main GUI application (enhanced threading)
+│  ├── image_optimization.py             # Image optimization(uses octree and median cut)
+│  ├── image_reformatting.py             # Image conversion (batch processor)
+│  ├── konami.py                         # I was bored
+│  ├── list_files_by_extension.py        # List files tool (GUI wrapper)
+│  ├── multitool.py                      # CLI interface for this tool
+│  ├── multitool.spec                    # PyInstaller build config
+│  ├── options.py                        # Seperate Options window
+│  ├── README.md                         # This file
+│  ├── rename_wt_excel.py                # Excel rename tool (file mapping)
+│  ├── requirements.txt                  # Python dependencies
+│  └── web_downloading.py                # Image downloader (multi-threaded)
+├── changelog.md                      # Documentation of changes
+├── CODE_OF_CONDUCT.md                # Code of conduct
+├── CONTRIBUTION.md                   # List of Contributors
+├── LICENCE                           # Software Licence
+├── README.md                         # Compact README for github
 ```
 
 
