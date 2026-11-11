@@ -83,6 +83,7 @@ a = Analysis(
         'create_backup',
         'check_for_update',
         'image_optimization',
+        'image_quality_grader',
         'PIL',
         'pandas',
         'numpy',

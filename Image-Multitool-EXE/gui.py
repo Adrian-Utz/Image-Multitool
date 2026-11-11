@@ -35,7 +35,7 @@ If the EXE is being made from a different location, adjust the path to pyinstall
 
 Written by: AJ Utz - and tested with the Ai Agent
 Written on: 3/19/2026
-Last updated: 10/5/2026
+Last updated: 11/10/2026
 """
 
 class GUI:
@@ -84,6 +84,7 @@ class GUI:
             ("Search & Copy", self.on_search_files, "Requires: A source folder to search, search term or .txt file, and destination folder."),
             ("Image reformat", self.on_image_reformat, "Requires: A folder containing images to reformat."),
             ("Image optimize", self.on_image_optimize, "Requires: A folder containing images to optimize without changing dimensions or format."),
+            ("Image quality grader", self.on_image_quality_grader, "Requires: A folder of images. BRISQUE optionally requires model and range files."),
             ("Excel rename", self.on_rename_excel, "Requires: An Excel file with renaming data and a folder with images."),
             ("TXT <-> Excel Compare", self.on_compare_txt_excel, "Requires: A .txt file, an Excel file (.xlsx or .xls), and a column name."),
             ("Excel image downloader", self.on_download_from_excel, "Requires: An Excel file with image URLs and column names."),
@@ -1359,7 +1360,7 @@ class GUI:
             strip_metadata_enabled = self.ask_yes_no(
                 "Strip metadata?",
                 "Remove EXIF/ICC/comment metadata to reduce file size?",
-                default="no",
+                default="yes",
             )
         except Exception:
             pass
@@ -1422,6 +1423,56 @@ class GUI:
             chroma_subsampling=chroma_subsampling,
             include_subfolders=include,
             logger=self.log,
+        )
+
+    def on_image_quality_grader(self):
+        folder = filedialog.askdirectory(title="Select folder with images to grade")
+        if not folder:
+            return
+        include = self.ask_yes_no("Include subfolders?", "Include subfolders when grading images?")
+        grading_mode = self.choose_option(
+            "Grading criteria",
+            "Grade by sharpness, brightness, or both? Enabled BRISQUE or similarity may also affect the grade.",
+            ["both", "sharpness", "brightness"],
+            default="both",
+        )
+        model_path = range_path = None
+        if self.ask_yes_no("BRISQUE", "Use BRISQUE model and range files?"):
+            model_path = filedialog.askopenfilename(title="Select BRISQUE model file")
+            if not model_path:
+                return
+            range_path = filedialog.askopenfilename(title="Select BRISQUE range file")
+            if not range_path:
+                return
+
+        reference_path = None
+        use_similarity = False
+        if self.ask_yes_no("Base image", "Compare images to a base image?"):
+            reference_path = filedialog.askopenfilename(title="Select base image")
+            if not reference_path:
+                return
+            use_similarity = self.ask_yes_no(
+                "Similarity grading",
+                "Use visual similarity to lower grades? Images must match the base image dimensions.",
+                default="no",
+            )
+
+        separation = self.choose_option(
+            "Separate images by grade",
+            "Leave images in place, copy them, or move them into grade folders?",
+            ["none", "copy", "move"],
+            default="none",
+        )
+        import image_quality_grader
+        task_name = f"Grading images in {folder.split(chr(92))[-1]}"
+        start_tool_task(
+            self, image_quality_grader.grade_folder, task_name,
+            input_folder=folder, include_subfolders=include,
+            model_path=model_path, range_path=range_path,
+            separation=None if separation == "none" else separation,
+            reference_path=reference_path,
+            use_similarity=use_similarity,
+            grading_mode=grading_mode,
         )
 
     def on_rename_excel(self):

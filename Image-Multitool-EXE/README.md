@@ -2,7 +2,7 @@
 
 A comprehensive file management and processing application with a modern, responsive GUI. Convert images, rename files using Excel data, search and copy files, download images from URLs, compare folders, and more—all with real-time progress tracking and background threading.
 
-**Version:** 1.3.4  
+**Version:** 1.3.5  
 **Last Updated:** 10/6/2026  
 **Status:** ✓ Production Ready
 
@@ -14,6 +14,7 @@ A comprehensive file management and processing application with a modern, respon
 - **Search & Copy** — Find files by name and optionally copy matches to a timestamped folder.
 - **Image Reformat/Convert** — Batch convert images between formats (jpg, png, webp, tiff, bmp, avif, heic, heif) with optional resizing, compression, and PPI settings.
 - **Image Optimization** — Batch optimize images to improve their size. Useful for websites.
+- **Image Quality Grader** — Grade images in a folder by sharpness and exposure, with optional BRISQUE distortion scoring.
 - **Excel Rename Tool** — Rename files based on Excel data mapping (e.g., match image file numbers to SKU names).
 - **TXT ↔ Excel Compare** — Compare a text file against an Excel column to find matches and missing items.
 - **Excel Image Downloader** — Download images from URLs listed in an Excel file with multi-threaded support.
@@ -80,6 +81,8 @@ All included in `requirements.txt`:
 | requests | HTTP downloads |
 | tqdm | Progress bars (disabled in GUI mode, only for CLI) |
 | jinja2 | A very fast and expressive template engine |
+| numpy | Image quality metric calculations |
+| opencv-contrib-python-headless | Image decoding, sharpness, and optional BRISQUE scoring |
 
 ### Launching the Application
 
@@ -179,6 +182,32 @@ pip install pyinstaller
 5. Results show files in folder 1 not in folder 2
 6. Optionally save to `missing_files.txt`
 
+#### Example 5: Image Quality Grader
+Choose **Image quality grader** in the GUI or option 6 in the CLI, select a folder, and choose whether to include subfolders. Reports appear in the GUI log or terminal. The tool scans BMP, JPEG, JPEG 2000, PNG, WebP, TIFF, AVIF, and GIF extensions; actual decoding support depends on the installed OpenCV build. Unreadable files are reported and skipped.
+
+At the end, grade totals show how many images received each grade (A through F), including zero counts. Failed images are excluded; an image still counts if grading succeeded but copying or moving failed. If cancelled, the totals cover images graded before cancellation.
+
+Choose whether the quality grade uses **both** sharpness and brightness (the default), **sharpness** alone, or **brightness** alone. Both metrics are shown; the unused one is informational. These heuristic thresholds assign each selected metric a grade, and the lowest grade wins:
+
+| Grade | Sharpness (Laplacian variance) | Mean brightness |
+|---|---|---|
+| A | >500 | 40–215 |
+| B | >250–500 | 30–<40 or >215–225 |
+| C | >100–250 | 20–<30 or >225–235 |
+| D | >50–100 | 10–<20 or >235–245 |
+| E | >20–50 | 5–<10 or >245–250 |
+| F | ≤20 | <5 or >250 |
+
+If BRISQUE is enabled, a score of 30 or more caps an otherwise A quality grade at B; when similarity grading is enabled, it can also lower the final grade. Grade folders and totals use the final grade.
+
+Optionally choose to copy or move all successfully graded images into folders named for their grades. Each run creates a uniquely named sibling folder beside the selected folder and logs its location; the original subfolder structure is retained inside each grade folder. Copies leave the source images in place; moves remove each original only after its copy succeeds. Failed or cancelled operations may leave a partially populated output folder. Choose **none** to leave all images in place.
+
+Optionally select a base image to compare metrics. Each report shows image-minus-base differences for sharpness variance, mean brightness, and BRISQUE when enabled. By default, this comparison does not change grades. The base is evaluated before the batch; if it is in the selected folder, it is also processed normally, including copying or moving when selected. An unreadable base stops the operation before images are separated.
+
+With a base image selected, you may also enable visual similarity grading. OpenCV SSIM compares grayscale images: similarity grades are A for scores of at least 0.95, B at least 0.85, C at least 0.70, D at least 0.50, E at least 0.25, and F otherwise. The final grade is the lower of the quality grade and the similarity grade; reports show both. Images must have the same dimensions as the base or they fail grading and are not copied or moved. SSIM is most meaningful for aligned images of the same subject and does not assess color similarity.
+
+BRISQUE is optional. To enable it, supply compatible OpenCV BRISQUE model and range YAML files when prompted; these files are not included. Without them the grade uses sharpness and exposure only. Scores and grades are heuristics, not guarantees of visual or professional quality. OpenCV reads color images with transparency discarded; animated and multi-page files are graded using their first decoded frame.
+
 ## Task Queue & Threading
 
 ### Status Indicators
@@ -225,6 +254,7 @@ Image-Multitool
 │  ├── gui_helpers.py                    # Helper functions for the GUI
 │  ├── gui.py                            # Main GUI application (enhanced threading)
 │  ├── image_optimization.py             # Image optimization(uses octree and median cut)
+│  ├── image_quality_grader.py           # Image quality grader
 │  ├── image_reformatting.py             # Image conversion (batch processor)
 │  ├── konami.py                         # I was bored
 │  ├── list_files_by_extension.py        # List files tool (GUI wrapper)
@@ -239,7 +269,7 @@ Image-Multitool
 ├── CODE_OF_CONDUCT.md                # Code of conduct
 ├── CONTRIBUTION.md                   # List of Contributors
 ├── LICENCE                           # Software Licence
-├── README.md                         # Compact README for github
+└── README.md                         # Compact README for github
 ```
 
 

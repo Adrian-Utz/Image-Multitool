@@ -21,7 +21,7 @@ Thought about making a GUI for it but I think the command line is fine for now. 
 I coded a basic GUI but it was a pain to get it to work with the progress bars and the output. I will save it for a future update when I have more time to work on it.
 Removed the GUI from this file and created a seperate GUI and EXE file.
 
-Last Update: 10/2/2026
+Last Update: 11/10/2026
 Written on: 12/3/2025
 Written by: AJ Utz
 """
@@ -40,14 +40,15 @@ def main_menu():
         print("│ 3. Search and Copy files             │")
         print("│ 4. Image reformatting / conversion   │")
         print("│ 5. Image optimization                │")
-        print("│ 6. Excel Renaming Tool               │")
-        print("│ 7. TXT <-> Excel Compare Tool        │")
-        print("│ 8. Excel Image Downloader            │")
-        print("│ 9. Folder Comparison Tool            │")
-        print("│ 10. Backup Tool                      │")
+        print("│ 6. Image quality grader              │")
+        print("│ 7. Excel Renaming Tool               │")
+        print("│ 8. TXT <-> Excel Compare Tool        │")
+        print("│ 9. Excel Image Downloader            │")
+        print("│ 10. Folder Comparison Tool           │")
+        print("│ 11. Backup Tool                      │")
         print("└──────────────────────────────────────┘")
 
-        choice = input("Select an option (0-10): ").strip()
+        choice = input("Select an option (0-11): ").strip()
 
         """If you are running the CLI make sure you have all requirements, and files in one folder."""
         if choice == "0":
@@ -103,38 +104,43 @@ def main_menu():
             input(RETURN_PROMPT)
 
         elif choice == "6":
+            import image_quality_grader
+
+            image_quality_grader.run_image_quality_grader()
+            input(RETURN_PROMPT)
+
+        elif choice == "7":
             import rename_wt_excel
 
             rename_wt_excel.run_excel_image_sku_tool()
             input(RETURN_PROMPT)
 
-        elif choice == "7":
+        elif choice == "8":
             import compare_txt_to_excel
 
             compare_txt_to_excel.run_txt_excel_compare()
             input(RETURN_PROMPT)
         
-        elif choice == "8":
+        elif choice == "9":
             import web_downloading
 
             web_downloading.run_excel_image_downloader()
             input(RETURN_PROMPT)
 
-        elif choice == "9":
+        elif choice == "10":
             import folder_compare
 
             folder_compare.run_folder_compare()
             input(RETURN_PROMPT)
 
-        elif choice == "10":
+        elif choice == "11":
             import create_backup
 
             create_backup.backup_selected_files()
             input(RETURN_PROMPT)
-
             
         else:
-            print("Invalid choice — please enter 1-10.")
+            print("Invalid choice — please enter 0-11.")
 
 
 if __name__ == "__main__":

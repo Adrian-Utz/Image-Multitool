@@ -94,3 +94,17 @@
 
 ## [v1.3.4](https://github.com/Adrian-Utz/Image-Multitool/releases/tag/1.3.4)
 - Added a **Cancel Pending...** control so users can select and remove an individual queued task before it starts. Made the excel renaming function a bit better by adding the defs: `contains_term` , `find_matches` , and `all_excel_bases`. The search term must not be stuck with other letters or digits. Moved the importing of pandas to inside the functions. 
+
+## [v1.3.5](https://github.com/Adrian-Utz/Image-Multitool/releases/tag/1.3.5)
+- New tool added, a image quality grader. At the end, grade totals show how many images received each grade (A through F), including zero counts. Failed images are excluded; an image still counts if grading succeeded but copying or moving failed. If cancelled, the totals cover images graded before cancellation. Choose whether the quality grade uses **both** sharpness and brightness (the default), **sharpness** alone, or **brightness** alone. Both metrics are shown; the unused one is informational. These heuristic thresholds assign each selected metric a grade, and the lowest grade wins:
+
+| Grade | Sharpness (Laplacian variance) | Mean brightness |
+|---|---|---|
+| A | >500 | 40–215 |
+| B | >250–500 | 30–<40 or >215–225 |
+| C | >100–250 | 20–<30 or >225–235 |
+| D | >50–100 | 10–<20 or >235–245 |
+| E | >20–50 | 5–<10 or >245–250 |
+| F | ≤20 | <5 or >250 |
+
+- If BRISQUE is enabled, a score of 30 or more caps an otherwise A quality grade at B; when similarity grading is enabled, it can also lower the final grade. Grade folders and totals use the final grade. Optionally choose to copy or move all successfully graded images into folders named for their grades. Each run creates a uniquely named sibling folder beside the selected folder and logs its location; the original subfolder structure is retained inside each grade folder. Copies leave the source images in place; moves remove each original only after its copy succeeds. Failed or cancelled operations may leave a partially populated output folder. Choose **none** to leave all images in place. Optionally select a base image to compare metrics. Each report shows image-minus-base differences for sharpness variance, mean brightness, and BRISQUE when enabled. By default, this comparison does not change grades. The base is evaluated before the batch; if it is in the selected folder, it is also processed normally, including copying or moving when selected. An unreadable base stops the operation before images are separated. With a base image selected, you may also enable visual similarity grading. OpenCV SSIM compares grayscale images: similarity grades are A for scores of at least 0.95, B at least 0.85, C at least 0.70, D at least 0.50, E at least 0.25, and F otherwise. The final grade is the lower of the quality grade and the similarity grade; reports show both. Images must have the same dimensions as the base or they fail grading and are not copied or moved. SSIM is most meaningful for aligned images of the same subject and does not assess color similarity. BRISQUE is optional. To enable it, supply compatible OpenCV BRISQUE model and range YAML files when prompted; these files are not included. Without them the grade uses sharpness and exposure only. Scores and grades are heuristics, not guarantees of visual or professional quality. OpenCV reads color images with transparency discarded; animated and multi-page files are graded using their first decoded frame.

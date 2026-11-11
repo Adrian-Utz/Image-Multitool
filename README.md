@@ -11,6 +11,7 @@ An all-in-one tool for bulk image re-formatting, file renaming, and file managem
 - **Search & Copy** — Find files by name and optionally copy matches to a timestamped folder.
 - **Image Reformat/Convert** — Batch convert images between formats (jpg, png, webp, tiff, bmp, avif, heic, heif) with optional resizing, compression, and PPI settings.
 - **Image Optimization** — Batch optimize images to improve their size. Useful for websites.
+- **Image Quality Grader** — Grade images by sharpness and exposure, optionally compare metrics or grade visual similarity to a base image, score BRISQUE distortion, and separate images by grade.
 - **Excel Rename Tool** — Rename files based on Excel data mapping (e.g., match image file numbers to SKU names).
 - **TXT ↔ Excel Compare** — Compare a text file against an Excel column to find matches and missing items.
 - **Excel Image Downloader** — Download images from URLs listed in an Excel file with multi-threaded support.
@@ -60,3 +61,5 @@ All included in `requirements.txt`:
 | requests | HTTP downloads |
 | tqdm | Progress bars (disabled in GUI mode, only for CLI) |
 | jinja2 | A very fast and expressive template engine |
+| numpy | Image quality metric calculations |
+| opencv-contrib-python-headless | Image decoding, sharpness, and optional BRISQUE scoring |
