@@ -34,6 +34,7 @@ An all-in-one tool for bulk image re-formatting, file renaming, and file managem
 │  • Search & Copy        │  └─ (Optional)Start Button       │
 │  • Image Reformat       │                                  │
 │  • Image Optimization   │                                  │
+│  • Image quality grader │                                  │
 │  • Excel Rename         │                                  │
 │  • TXT ↔ Excel          │                                  │
 │  • Image Downloader     │  Active Tasks Queue              │

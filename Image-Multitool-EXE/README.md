@@ -132,6 +132,7 @@ pip install pyinstaller
 │  • Search & Copy        │  └─ (Optional)Start Button       │
 │  • Image Reformat       │                                  │
 │  • Image Optimization   │                                  │
+│  • Image quality grader │                                  │
 │  • Excel Rename         │                                  │
 │  • TXT ↔ Excel          │                                  │
 │  • Image Downloader     │  Active Tasks Queue              │
