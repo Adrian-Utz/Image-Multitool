@@ -1,0 +1,455 @@
+import os
+import re
+import shutil
+from tqdm import tqdm
+
+r"""
+This program is to make bulk renaming faster. This program should look at the filename, find the cell with matching info, then rename it to the SKU name.
+
+Change Log:
+Added Comments to clearly explain each step of the process.
+Added error handling for file operations to catch and report any issues during copying.
+Added a summary at the end to report how many files were copied, how many were missing, how many were skipped due to existing files, and how many errors occurred.
+Added Documentation
+Added the ignore_file_extension option to allow matching based on base name regardless of file extension, providing more flexibility in handling different image formats.
+Added cancellation support.
+Fixed a potential bug. This line: print(f"Copied: {source_filename} -> {output_path}\{new_filename}") was using a single backslash which could cause issues on some systems. 
+I changed it to this: print(f"Copied: {source_filename} -> {output_path}\\{new_filename}") could be seen as a invalid escape sequence. 
+By using a double backslash, we ensure that it is treated as a literal backslash in the output string, which is important for correctly displaying file paths on Windows systems.
+Asked the user for a path to the file intead.
+
+Written by: AJ Utz
+Written on: 1/14/2026
+Last Edit: 10/6/2026
+"""
+
+VALID_EXTENSIONS = ('.jpg', '.jpeg', '.webp', '.tif', '.tiff')
+
+def sanitize_filename(name):
+
+    if not isinstance(name, str):
+        return ""
+    
+    name = name.strip() #Remove leading and trailing whitespace
+
+    name = re.sub(r'[\\/*?:"<>|]', '_', name) #Replace invalid characters with underscores
+
+    name = re.sub(r'[\x00-\x1f\x7f]', '', name) #Remove control characters
+
+    name = name.replace("..", "") #Remove double dots to prevent directory traversal issues
+
+    return name
+
+
+def variant_label(index):
+    """Return an Excel-style alphabetic label for a zero-based variant index."""
+    label = ""
+    while True:
+        index, remainder = divmod(index, 26)
+        label = chr(ord("A") + remainder) + label
+        if index == 0:
+            return label
+        index -= 1
+
+def contains_term(text, term):
+    """True if term appears in text and isn't glued to other letters/digits."""
+    return re.search(r"(?<![a-z0-9])" + re.escape(term) + r"(?![a-z0-9])", text) is not None
+
+
+def find_matches(excel_base, filenames, all_bases):
+    """Return (primary, others). Files match if their name equals or contains the search term
+    (e.g. "My_Store_Image_N190-850" for "N190-850"). A file that also contains a longer
+    search term from the sheet belongs to that longer term instead."""
+    longer_terms = [b for b in all_bases if len(b) > len(excel_base)]
+    matches = []
+    for original_filename in filenames:
+        file_base = os.path.splitext(os.path.basename(original_filename))[0].strip().lower()
+        if file_base == excel_base:
+            matches.append((0, len(file_base), original_filename))
+        elif contains_term(file_base, excel_base) and not any(contains_term(file_base, b) for b in longer_terms):
+            matches.append((1, len(file_base), original_filename))
+    matches.sort(key=lambda m: (m[0], m[1], m[2].lower()))
+    files = [m[2] for m in matches]
+    if not files:
+        return None, []
+    return files[0], files[1:]
+
+
+def all_excel_bases(df, image_col):
+    """Collect normalized base names of every image entry in the sheet."""
+    bases = set()
+    for raw in df[image_col].dropna():
+        name = str(int(raw)) if isinstance(raw, float) else str(raw)
+        name = sanitize_filename(name).strip().lower()
+        stem, ext = os.path.splitext(name)
+        bases.add(stem.strip() if ext in VALID_EXTENSIONS else name)
+    return bases
+
+def run_excel_image_sku_tool():
+    import pandas as pd  #Deferred: pandas is slow to import
+    print("\n===== Excel Image -> SKU Copy Tool =====")
+    
+    valid_extensions = VALID_EXTENSIONS
+    output_folder = 'renamed_by_sku'
+
+    copied_count = 0
+    missing_count = 0
+    skipped_count = 0
+    error_count = 0
+
+    include_subfolders = input("Include subfolders? (y/n): ").strip().lower() == 'y'
+
+    #Ask for Excel file
+    excel_file = input("Enter Excel file path (example: C:\\images.xlsx): ").strip()
+
+    #Check if file exists
+    if not os.path.exists(excel_file):
+        print("File does not exist")
+        exit()
+
+    #Load Excel file
+    try:
+        df = pd.read_excel(excel_file)
+    except Exception as e:
+        print(f"Error loading Excel file: {e}")
+        exit()
+
+    #Show Available Columns
+    print("Available Columns in excel: ")
+    for col in df.columns:
+        print(f" - {col}")
+
+    #Get column names from user
+    image_col = input("\nEnter column name for Image names: ").strip()
+    sku_col = input("Enter column name for SKU names: ").strip()
+
+    folder_path = input("Enter folder path containing the files to rename: ").strip()
+    if not folder_path or not os.path.isdir(folder_path):
+        print("A valid source folder path is required.")
+        return
+
+    preserve_variants_input = input("Preserve variant suffixes in filenames? (y/n): ").strip().lower()
+    preserve_variants = preserve_variants_input == 'y'
+
+    #Validate columns
+    if image_col not in df.columns or sku_col not in df.columns:
+        print(f"Excel must contain columns: '{image_col}' and '{sku_col}'")
+        exit()
+
+    #Prepare Output
+    output_path = os.path.join(folder_path, output_folder)
+    os.makedirs(output_path, exist_ok=True)
+
+    #Get JPG files (optionally including subfolders, but skip output folder)
+    if include_subfolders:
+        jpg_files = {}
+        abs_output_path = os.path.abspath(output_path)
+        for root, dirs, files in os.walk(folder_path):
+            # Don't walk into the output folder
+            dirs[:] = [d for d in dirs if os.path.abspath(os.path.join(root, d)) != abs_output_path]
+            for f in files:
+                if f.lower().endswith(valid_extensions):
+                    rel_path = os.path.relpath(os.path.join(root, f), folder_path)
+                    jpg_files[rel_path.lower()] = rel_path
+    else:
+        jpg_files = {f.lower(): f for f in os.listdir(folder_path) if f.lower().endswith(valid_extensions)}
+
+    if not jpg_files:
+        print("No JPG files found in the folder.")
+        exit()
+
+    #Loop through each row in the Excel file and attempt to match and copy files
+    deferred_logs = []
+    all_bases = all_excel_bases(df, image_col)
+    for _, row in tqdm(df.iterrows(), total=len(df), desc="Processing rows", ascii=True, dynamic_ncols=False):
+
+        raw_image = row[image_col] #Get raw image name from Excel, which could be a string or a number
+        raw_sku = row[sku_col] #Get raw SKU name from Excel, which could also be a string or a number
+
+        #Handle NaN properly
+        if pd.isna(raw_image) or pd.isna(raw_sku):
+            continue
+
+        #Convert Excel image name to string safely, handling numbers (like 4352019.0)
+        if isinstance(raw_image, float):
+            image_name = str(int(raw_image))  #e.g., 4352019.0 -> "4352019"
+        else:
+            image_name = str(raw_image)
+
+        #Convert SKU to string safely, handling numbers as well
+        image_name = sanitize_filename(image_name).strip()
+        sku_name = sanitize_filename(str(raw_sku)).strip()
+
+        #Skip rows with empty names
+        if not image_name or not sku_name:
+            continue
+
+        #Ensure image name has a valid extension
+        if not image_name.lower().endswith(valid_extensions):
+            image_name += ".jpg"
+
+        #Get base name without extension from Excel
+        excel_base = os.path.splitext(image_name)[0].strip().lower()
+        
+        #Find all matching files in the folder
+        exact_match, variant_matches = find_matches(excel_base, jpg_files.values(), all_bases)
+        matching_files = ([exact_match] if exact_match else []) + variant_matches
+
+        #Copy matched files
+        if matching_files:
+            for match_index, source_filename in enumerate(matching_files):
+
+                source_path = os.path.join(folder_path, source_filename)
+                _, original_ext = os.path.splitext(os.path.basename(source_filename))
+
+                if preserve_variants:
+                    variant_index = match_index - (1 if exact_match else 0)
+                    if source_filename == exact_match:
+                        new_filename = f"{sku_name}{original_ext}"
+                    else:
+                        new_filename = f"{sku_name}_{variant_label(variant_index)}{original_ext}"
+                else:
+                    new_filename = f"{sku_name}{original_ext}"
+
+                dest_path = os.path.join(output_path, new_filename)
+
+                if os.path.exists(dest_path):
+                    deferred_logs.append(f"Skipping (already exists): {new_filename}")
+                    skipped_count += 1
+                    continue
+
+                try:
+                    shutil.copy2(source_path, dest_path)
+                    deferred_logs.append(f"Copied: {source_filename} -> {output_path}\\{new_filename}")
+                    copied_count += 1
+                except Exception as e:
+                    deferred_logs.append(f"Error copying {source_filename}: {e}")
+                    error_count += 1
+        else:
+            deferred_logs.append(f"No match found for image: {image_name}")
+            missing_count += 1
+
+    #Print per-row results only after the bar has finished filling
+    for message in deferred_logs:
+        print(message)
+
+    print(f"""
+Summary:
+Copied: {copied_count}
+Missing Images: {missing_count}
+Skipped (Already Exists): {skipped_count}
+Errors: {error_count}
+""")
+
+
+if __name__ == "__main__":
+    run_excel_image_sku_tool()
+
+
+def rename_from_excel_gui(
+        excel_file,
+        image_col,
+        sku_col,
+        preserve_variants=False,
+        ignore_file_extension=False,
+        folder_path='.',
+        output_folder='renamed_by_sku',
+        include=False,
+        logger=print,
+        progress_callback=None,
+        cancel_event=None
+    ):
+    
+    """Non-interactive wrapper for GUI use. Mirrors the behavior of run_excel_image_sku_tool but accepts parameters."""
+    import pandas as pd  #Deferred: pandas is slow to import
+    folder_path = folder_path or '.'
+    valid_extensions = VALID_EXTENSIONS
+    output_path = os.path.join(folder_path, output_folder)
+    os.makedirs(output_path, exist_ok=True)
+
+    try:
+        df = pd.read_excel(
+            excel_file,
+            converters={
+                image_col: lambda x: str(x).strip(), #Convert image column to string and strip whitespace, handling numbers as well
+                sku_col: lambda x: str(x).strip() #Convert SKU column to string and strip whitespace, handling numbers as well
+            }
+            )
+    except Exception as e:
+        logger(f"Error loading Excel file: {e}")
+        return
+
+    # Convert column numbers to column names
+    if isinstance(image_col, int):
+        if image_col < 0 or image_col >= len(df.columns):
+            logger(f"Image column index {image_col} is out of range. Available columns: {len(df.columns)}")
+            return
+        image_col = df.columns[image_col]
+    
+    if isinstance(sku_col, int):
+        if sku_col < 0 or sku_col >= len(df.columns):
+            logger(f"SKU column index {sku_col} is out of range. Available columns: {len(df.columns)}")
+            return
+        sku_col = df.columns[sku_col]
+
+    if image_col not in df.columns or sku_col not in df.columns:
+        logger(f"Excel must contain columns: '{image_col}' and '{sku_col}'")
+        return
+
+    # Build file list based on extension matching preference and include flag
+    abs_output_path = os.path.abspath(output_path)
+    if include:
+        files_to_check = {}
+        for root, dirs, files in os.walk(folder_path):
+            if cancel_event and cancel_event.is_set():
+                logger("[INFO] Rename from Excel cancelled.")
+                return
+            # Don't walk into the output folder
+            dirs[:] = [d for d in dirs if os.path.abspath(os.path.join(root, d)) != abs_output_path]
+            for f in files:
+                if cancel_event and cancel_event.is_set():
+                    logger("[INFO] Rename from Excel cancelled.")
+                    return
+                if ignore_file_extension or f.lower().endswith(valid_extensions):
+                    rel_path = os.path.relpath(os.path.join(root, f), folder_path)
+                    files_to_check[rel_path.lower()] = rel_path
+    else:
+        if ignore_file_extension:
+            all_files = {f.lower(): f for f in os.listdir(folder_path) if os.path.isfile(os.path.join(folder_path, f))}
+            files_to_check = all_files
+        else:
+            files_to_check = {f.lower(): f for f in os.listdir(folder_path) if f.lower().endswith(valid_extensions)}
+
+    copied_count = 0
+    missing_count = 0
+    skipped_count = 0
+    error_count = 0
+    total_rows = len(df)
+    all_bases = all_excel_bases(df, image_col)
+
+    for row_idx, (_, row) in enumerate(df.iterrows()):
+        if cancel_event and cancel_event.is_set():
+            logger("[INFO] Rename from Excel cancelled.")
+            return
+        if progress_callback and total_rows > 0:
+            progress_callback(int(((row_idx) / total_rows) * 100))
+        raw_image = row[image_col]
+        raw_sku = row[sku_col]
+
+        if pd.isna(raw_image) or pd.isna(raw_sku):
+            continue
+
+        if isinstance(raw_image, float):
+            image_name = str(int(raw_image))
+        else:
+            image_name = str(raw_image)
+
+        image_name = sanitize_filename(image_name).strip()
+        sku_name = sanitize_filename(str(raw_sku)).strip()
+
+        if not image_name or not sku_name:
+            continue
+
+        # Handle file extension matching based on user preference
+        if ignore_file_extension:
+            # Strip extension for matching
+            excel_base = os.path.splitext(image_name)[0].strip().lower()
+        else:
+            # Add .jpg if missing (original behavior)
+            if not image_name.lower().endswith(valid_extensions):
+                image_name += ".jpg"
+            excel_base = os.path.splitext(image_name)[0].strip().lower()
+
+        exact_match, variant_matches = find_matches(excel_base, files_to_check.values(), all_bases)
+        matching_files = ([exact_match] if exact_match else []) + variant_matches
+
+        #If we found any matching files, we proceed to copy them to the output folder with the new SKU-based name.
+        if matching_files:
+            for match_index, source_filename in enumerate(matching_files):
+                if cancel_event and cancel_event.is_set():
+                    logger("[INFO] Rename from Excel cancelled.")
+                    return
+                source_path = os.path.join(folder_path, source_filename)
+                _, original_ext = os.path.splitext(os.path.basename(source_filename))
+
+                if preserve_variants:
+                    variant_index = match_index - (1 if exact_match else 0)
+                    if source_filename == exact_match:
+                        new_filename = f"{sku_name}{original_ext}"
+                    else:
+                        new_filename = f"{sku_name}_{variant_label(variant_index)}{original_ext}"
+                else:
+                    new_filename = f"{sku_name}{original_ext}"
+
+                dest_path = os.path.join(output_path, new_filename)
+
+                #Before copying, we check if a file with the new name already exists in the output folder. 
+                #If it does, we skip copying that file and log a message indicating that it was skipped due to already existing.
+                if os.path.exists(dest_path):
+                    logger(f"Skipping (already exists): {new_filename}")
+                    skipped_count += 1
+                    continue
+
+                try:
+                    shutil.copy2(source_path, dest_path)
+                    logger(f"Copied: {source_filename} -> {output_path}/{new_filename}")
+                    copied_count += 1
+                except Exception as e:
+                    logger(f"Error copying {source_filename}: {e}")
+                    error_count += 1
+        else:
+            logger(f"No match found for image: {image_name}")
+            missing_count += 1
+
+    logger(f"\nSummary:\nCopied: {copied_count}\nMissing Images: {missing_count}\nSkipped (Already Exists): {skipped_count}\nErrors: {error_count}\n")
+
+
+def run_dialog(app):
+    """GUI entry point: prompt for options, then queue the task on `app`."""
+    from tkinter import filedialog, messagebox
+    from image_multitool.core.helpers import load_excel_columns
+
+    excel = filedialog.askopenfilename(title="Select Excel file", filetypes=[("Excel files", "*.xlsx;*.xls")])
+    if not excel:
+        return
+
+    try:
+        columns = load_excel_columns(excel)
+    except Exception as e:
+        messagebox.showerror("Error reading Excel file", f"Could not read Excel file: {e}")
+        return
+
+    image_col = app.choose_column("Select Image Column", columns)
+    if not image_col:
+        return
+    if image_col.isdigit():
+        image_col = int(image_col)
+
+    sku_col = app.choose_column("Select SKU Column", columns)
+    if not sku_col:
+        return
+    if sku_col.isdigit():
+        sku_col = int(sku_col)
+
+    folder = filedialog.askdirectory(title="Select folder with files to rename")
+    if not folder:
+        return
+
+    include = app.ask_yes_no("Include subfolders?", "Include subfolders in renaming?")
+    preserve = app.ask_yes_no("Preserve variants", "Preserve variant suffixes in filenames?")
+    ignore_ext = app.ask_yes_no("File extension matching", "Ignore file extensions when matching names?\n\nYes: Match 'image' to 'image.jpg'\nNo: Include extension in the name (current behavior)")
+    task_name = f"Renaming files using {excel.split(chr(92))[-1]}"
+    app.log(f"[STARTING] {task_name}")
+    app.run_in_thread(
+        rename_from_excel_gui,
+        task_name=task_name,
+        excel_file=excel,
+        image_col=image_col,
+        sku_col=sku_col,
+        preserve_variants=preserve,
+        ignore_file_extension=ignore_ext,
+        folder_path=folder,
+        include=include,
+        output_folder='renamed_by_sku',
+        logger=app.log,
+    )

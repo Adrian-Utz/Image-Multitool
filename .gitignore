@@ -1,0 +1,33 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Test/cache outputs
+.pytest_cache/
+.coverage
+htmlcov/
+tests/
+
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+image_multitool.egg-info/
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+
+# Workflows
+WKF_JSON/
+
+# Local scratch output
+tmp_out.jpg
